@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(youtrack-app upload:*)",
+      "Bash(youtrack-app validate:*)",
+      "Bash(npm run pack:*)",
+      "Bash(set YOUTRACK_TOKEN=perm-cGF1bG8uY2FybW8=.NTQtNzk=.9vQdTeI3jHcs7bpsqrG8DwE6veGoWV)",
+      "Bash(set YOUTRACK_HOST=braiphub.youtrack.cloud)",
+      "Bash(start http://localhost:5173/widgets/timer-dashboard/simple.html)",
+      "Bash(npm run upload:*)",
+      "Bash(start http://localhost:5174/widgets/timer-dashboard/index.html)",
+      "WebSearch",
+      "WebFetch(domain:www.jetbrains.com)",
+      "Bash(find:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

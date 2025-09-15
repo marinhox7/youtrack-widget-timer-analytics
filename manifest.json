@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json.schemastore.org/youtrack-app.json",
+  "name": "timer-dashboard-widget",
+  "title": "Timer Dashboard Widget",
+  "description": "Monitore todos os timers ativos dos desenvolvedores em tempo real",
+  "version": "1.0.0",
+  "icon": "icon.svg",
+  "vendor": {
+    "name": "Braip Development Team",
+    "url": "https://braip.com",
+    "email": "contato@braip.com"
+  },
+  "widgets": [
+    {
+      "key": "timer-dashboard-global",
+      "name": "Timer Dashboard Global",
+      "description": "Widget global para dashboards com timers ativos",
+      "extensionPoint": "DASHBOARD_WIDGET",
+      "indexPath": "widgets/timer-dashboard/index.html",
+      "permissions": [
+        "READ_ISSUE",
+        "READ_PROJECT",
+        "PRIVATE_READ_ISSUE"
+      ],
+      "defaultDimensions": {
+        "width": "8fr",
+        "height": "4fr"
+      }
+    },
+    {
+      "key": "timer-dashboard-project-settings",
+      "name": "Timer Dashboard de Projeto",
+      "description": "Widget visível nas configurações de cada projeto",
+      "extensionPoint": "PROJECT_SETTINGS",
+      "indexPath": "widgets/timer-dashboard/project-settings/index.html",
+      "permissions": [
+        "READ_ISSUE",
+        "READ_PROJECT",
+        "PRIVATE_READ_ISSUE"
+      ],
+      "expectedDimensions": {
+        "width": 600,
+        "height": 400
+      }
+    }
+  ]
+}
