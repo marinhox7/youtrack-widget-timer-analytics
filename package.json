@@ -9,17 +9,23 @@
     "lint": "eslint --report-unused-disable-directives --max-warnings 0",
     "test": "echo 'no tests'",
     "pack": "rm -rf timer-dashboard-widget.zip && cd dist/ && bestzip ../timer-dashboard-widget.zip *",
-    "upload": "youtrack-app upload dist --host https://braiphub.youtrack.cloud/youtrack --token perm-cGF1bG8uY2FybW8=.NTQtNzk=.9vQdTeI3jHcs7bpsqrG8DwE6veGoWV",
+    "upload": "youtrack-app upload dist",
     "validate": "youtrack-app validate dist",
     "copy-assets": "cp -r dist/assets dist/widgets/timer-dashboard/ && cp -r dist/assets dist/widgets/timer-dashboard/project-settings/"
   },
   "dependencies": {
-    "core-js": "3.38.0"
+    "core-js": "3.38.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@jetbrains/youtrack-apps-tools": "^0.0.1",
+    "@types/node": "^24.5.0",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^4.3.4",
     "bestzip": "^2.2.1",
+    "eslint": "^9.35.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.1",
     "vite-plugin-static-copy": "^2.2.0"
