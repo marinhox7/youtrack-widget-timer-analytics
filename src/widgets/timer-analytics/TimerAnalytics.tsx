@@ -349,6 +349,45 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
         </div>
       </div>
 
+      {/* Active Issues List */}
+      <div className="active-issues-section">
+        <h3>🔥 Issues com Timers Ativos</h3>
+        <div className="active-issues-grid">
+          {data.timers.length > 0 ? (
+            data.timers.slice(0, 10).map((timer, index) => (
+              <div key={`${timer.issueId}-${index}`} className="active-issue-card">
+                <div className="issue-header">
+                  <span className="issue-id">{timer.issueKey}</span>
+                  <span className="issue-project">{timer.projectShortName}</span>
+                </div>
+                <div className="issue-title">{timer.issueSummary}</div>
+                <div className="issue-meta">
+                  <span className="timer-duration">⏱️ {formatDuration(timer.durationMs, { precision: 'medium' })}</span>
+                  <span className="timer-user">👤 {timer.username}</span>
+                </div>
+                <div className="issue-status">
+                  <span className={`status-badge ${timer.issueState?.toLowerCase().replace(' ', '-')}`}>
+                    {timer.issueState || 'N/A'}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="no-active-issues">
+              <div className="empty-icon">💤</div>
+              <p>Nenhum timer ativo no momento</p>
+            </div>
+          )}
+        </div>
+        {data.timers.length > 10 && (
+          <div className="show-more">
+            <button className="show-more-btn">
+              Ver mais {data.timers.length - 10} issues...
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Charts Grid */}
       <div className="charts-grid">
         {/* Trends Chart */}

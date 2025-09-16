@@ -29,7 +29,8 @@
       "Bash(cat:*)",
       "Bash(npx youtrack-app:*)",
       "Bash(zip:*)",
-      "Bash(tar:*)"
+      "Bash(tar:*)",
+      "Bash(set YOUTRACK_TOKEN=perm-cGF1bG8uY2FybW8=.NTQtODQ=.duiywxlZPzmm5ZV5JHHuNQTuBK0hm3)"
     ],
     "deny": [],
     "ask": []

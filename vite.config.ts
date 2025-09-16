@@ -41,6 +41,26 @@ viteStaticCopy({
           dest: 'widgets/timer-dashboard/project-settings/'
         },
         {
+          src: 'widgets/timer-analytics/index.html',
+          dest: 'widgets/timer-analytics/'
+        },
+        {
+          src: 'widgets/user-timer/index.html',
+          dest: 'widgets/user-timer/'
+        },
+        {
+          src: 'widgets/project-dashboard/index.html',
+          dest: 'widgets/project-dashboard/'
+        },
+        {
+          src: 'widgets/timer-dashboard/simple/index.html',
+          dest: 'widgets/timer-dashboard/simple/'
+        },
+        {
+          src: 'widgets/user-timer/compact/index.html',
+          dest: 'widgets/user-timer/compact/'
+        },
+        {
           src: 'widgets/timer-dashboard/icon.svg',
           dest: 'widgets/timer-dashboard/'
         },
@@ -63,7 +83,12 @@ assetsDir: 'assets',
 rollupOptions: {
       input: {
         main: resolve('./src/widgets/timer-dashboard/index.tsx'),
-        'project-settings-main': resolve('./src/widgets/timer-dashboard/project-settings/index.tsx')
+        'project-settings-main': resolve('./src/widgets/timer-dashboard/project-settings/index.tsx'),
+        'analytics-main': resolve('./src/widgets/timer-analytics/index.tsx'),
+        'user-timer-main': resolve('./src/widgets/user-timer/index.tsx'),
+        'project-dashboard-main': resolve('./src/widgets/project-dashboard/index.tsx'),
+        'simple-dashboard-main': resolve('./src/widgets/timer-dashboard/simple/index.tsx'),
+        'user-timer-compact-main': resolve('./src/widgets/user-timer/compact/index.tsx')
       },
       output: {
         entryFileNames: 'assets/[name].js',
