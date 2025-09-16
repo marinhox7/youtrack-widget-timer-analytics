@@ -14,7 +14,22 @@
       "Bash(start http://localhost:5174/widgets/timer-dashboard/index.html)",
       "WebSearch",
       "WebFetch(domain:www.jetbrains.com)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git remote add:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm install:*)",
+      "Bash(sed:*)",
+      "Bash(vite build)",
+      "Bash(npm run copy-assets:*)",
+      "Bash(npx vite:*)",
+      "Bash(npx youtrack-app validate:*)",
+      "Bash(cat:*)",
+      "Bash(npx youtrack-app:*)",
+      "Bash(zip:*)",
+      "Bash(tar:*)"
     ],
     "deny": [],
     "ask": []

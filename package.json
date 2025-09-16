@@ -7,16 +7,25 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.app.json && vite build && npm run copy-assets && youtrack-app validate dist",
     "lint": "eslint --report-unused-disable-directives --max-warnings 0",
-    "test": "echo 'no tests'",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "pack": "rm -rf timer-dashboard-widget.zip && cd dist/ && bestzip ../timer-dashboard-widget.zip *",
     "upload": "youtrack-app upload dist",
     "validate": "youtrack-app validate dist",
     "copy-assets": "cp -r dist/assets dist/widgets/timer-dashboard/ && cp -r dist/assets dist/widgets/timer-dashboard/project-settings/"
   },
   "dependencies": {
+    "@types/throttle-debounce": "^5.0.2",
+    "chart.js": "^4.5.0",
     "core-js": "3.38.0",
+    "date-fns": "^4.1.0",
+    "debounce": "^2.2.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^19.1.1",
+    "throttle-debounce": "^5.0.2"
   },
   "devDependencies": {
     "@jetbrains/youtrack-apps-tools": "^0.0.1",
@@ -24,10 +33,13 @@
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/ui": "^3.2.4",
     "bestzip": "^2.2.1",
     "eslint": "^9.35.0",
+    "jsdom": "^27.0.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.1",
-    "vite-plugin-static-copy": "^2.2.0"
+    "vite-plugin-static-copy": "^2.2.0",
+    "vitest": "^3.2.4"
   }
 }

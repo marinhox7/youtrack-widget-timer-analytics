@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer Dashboard Simples</title>
+    <script type="module" crossorigin src="/dist/assets/main.js"></script>
+    <link rel="stylesheet" href="/dist/assets/TimerDashboard-DB9lm4Ty.css">
+</head>
+<body>
+    <div id="simple-timer-root"></div>
+
+    <script type="module">
+        import { createRoot } from 'react-dom/client';
+        import React from 'react';
+
+        // Simple timer dashboard component
+        function SimpleTimerDashboard() {
+            return React.createElement('div', {
+                style: {
+                    padding: '16px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                }
+            }, [
+                React.createElement('h3', { key: 'title' }, 'Timer Dashboard Simples'),
+                React.createElement('p', { key: 'desc' }, 'Versão compacta em desenvolvimento')
+            ]);
+        }
+
+        // Get YouTrack host from the widget API
+        const host = window.YT?.host;
+
+        // Create and render the simple timer widget
+        const container = document.getElementById('simple-timer-root');
+        if (container) {
+            const root = createRoot(container);
+            root.render(React.createElement(SimpleTimerDashboard));
+        }
+
+        // Register widget lifecycle events
+        if (typeof YT !== 'undefined' && YT.onWidgetReady) {
+            YT.onWidgetReady(() => {
+                console.log('Simple Timer Dashboard widget ready');
+            });
+        }
+    </script>
+</body>
+</html>

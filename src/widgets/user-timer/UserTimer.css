@@ -1,0 +1,525 @@
+/* User Timer Widget Styles */
+
+.user-timer {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+.user-timer.compact {
+  min-height: 300px;
+}
+
+/* Header */
+.user-timer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #007acc;
+  border-radius: 50%;
+  color: white;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.username {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.user-subtitle {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.refresh-button {
+  background-color: #007acc;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.refresh-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Quick Stats */
+.quick-stats {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  flex-shrink: 0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.stat-icon {
+  font-size: 18px;
+  width: 32px;
+  text-align: center;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #212529;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Sections */
+.active-timers-section,
+.recent-activity-section,
+.longest-timer-section {
+  padding: 16px;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.section-title {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Active Timers */
+.timers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timer-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #28a745;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.timer-item:hover {
+  background-color: #e9ecef;
+  transform: translateY(-1px);
+}
+
+.timer-item.selected {
+  background-color: #e3f2fd;
+  border-left-color: #2196f3;
+}
+
+.timer-item.status-attention {
+  border-left-color: #ffc107;
+}
+
+.timer-item.status-long {
+  border-left-color: #fd7e14;
+}
+
+.timer-item.status-critical {
+  border-left-color: #dc3545;
+  background-color: #f8d7da;
+}
+
+.timer-status {
+  flex-shrink: 0;
+}
+
+.status-icon {
+  font-size: 16px;
+  width: 24px;
+  text-align: center;
+}
+
+.timer-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.timer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.issue-key {
+  font-weight: 600;
+  color: #007acc;
+  font-size: 13px;
+}
+
+.timer-duration {
+  font-weight: bold;
+  color: #212529;
+  font-size: 13px;
+}
+
+.timer-summary {
+  font-size: 12px;
+  color: #495057;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timer-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #6c757d;
+}
+
+.project-name {
+  font-weight: 500;
+}
+
+/* Recent Activity */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.activity-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.activity-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.activity-issue {
+  font-weight: 600;
+  color: #007acc;
+}
+
+.activity-duration {
+  color: #495057;
+}
+
+.activity-time {
+  color: #6c757d;
+  font-size: 11px;
+}
+
+/* Longest Timer */
+.longest-timer-card {
+  padding: 12px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+}
+
+.longest-timer-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.longest-issue {
+  font-weight: 600;
+  color: #856404;
+  font-size: 13px;
+}
+
+.longest-duration {
+  font-weight: bold;
+  color: #856404;
+  font-size: 14px;
+}
+
+.longest-summary {
+  font-size: 12px;
+  color: #856404;
+  opacity: 0.8;
+}
+
+/* Footer */
+.user-timer-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-top: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  font-size: 11px;
+  color: #6c757d;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+/* Loading States */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  gap: 12px;
+  color: #6c757d;
+}
+
+.loader {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007acc;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  gap: 12px;
+  color: #dc3545;
+}
+
+.error-icon {
+  font-size: 24px;
+}
+
+.retry-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background-color: #c82333;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  gap: 12px;
+  color: #6c757d;
+}
+
+.empty-icon {
+  font-size: 48px;
+}
+
+/* Compact Mode Adjustments */
+.user-timer.compact .user-timer-header {
+  padding: 12px;
+}
+
+.user-timer.compact .quick-stats {
+  padding: 12px;
+}
+
+.user-timer.compact .active-timers-section {
+  padding: 12px;
+}
+
+.user-timer.compact .timer-item {
+  padding: 8px;
+}
+
+.user-timer.compact .timer-summary {
+  display: none;
+}
+
+.user-timer.compact .timer-meta .start-time {
+  display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .user-timer-header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .quick-stats {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .timer-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .timer-meta {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .activity-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .longest-timer-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .user-timer-footer {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .user-timer {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+  }
+
+  .user-timer-header,
+  .quick-stats,
+  .user-timer-footer {
+    background-color: #363636;
+    border-color: #4a4a4a;
+  }
+
+  .timer-item,
+  .activity-item {
+    background-color: #404040;
+  }
+
+  .timer-item:hover {
+    background-color: #4a4a4a;
+  }
+
+  .timer-item.status-critical {
+    background-color: #4a2c2c;
+  }
+
+  .longest-timer-card {
+    background-color: #4a4330;
+    border-color: #6b5b3a;
+  }
+
+  .username,
+  .stat-value,
+  .timer-duration,
+  .section-title {
+    color: #e0e0e0;
+  }
+
+  .user-subtitle,
+  .stat-label,
+  .timer-meta,
+  .activity-time,
+  .user-timer-footer {
+    color: #b0b0b0;
+  }
+
+  .timer-summary,
+  .activity-duration {
+    color: #d0d0d0;
+  }
+
+  .longest-issue,
+  .longest-duration,
+  .longest-summary {
+    color: #f0c040;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

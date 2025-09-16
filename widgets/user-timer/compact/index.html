@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Timers (Compacto)</title>
+    <script type="module" crossorigin src="/dist/assets/main.js"></script>
+    <link rel="stylesheet" href="/dist/assets/TimerDashboard-DB9lm4Ty.css">
+</head>
+<body>
+    <div id="compact-user-timer-root"></div>
+
+    <script type="module">
+        import { createRoot } from 'react-dom/client';
+        import React from 'react';
+
+        // Compact user timer component
+        function CompactUserTimer() {
+            return React.createElement('div', {
+                style: {
+                    padding: '12px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '6px',
+                    border: '1px solid #dee2e6',
+                    textAlign: 'center'
+                }
+            }, [
+                React.createElement('h4', {
+                    key: 'title',
+                    style: { margin: '0 0 8px 0', fontSize: '14px' }
+                }, 'Meus Timers'),
+                React.createElement('p', {
+                    key: 'desc',
+                    style: { margin: '0', fontSize: '12px', color: '#6c757d' }
+                }, 'Versão compacta em desenvolvimento')
+            ]);
+        }
+
+        // Get YouTrack host and current user from the widget API
+        const host = window.YT?.host;
+        const currentUser = window.YT?.user?.login || window.YT?.user?.username;
+
+        // Create and render the compact user timer widget
+        const container = document.getElementById('compact-user-timer-root');
+        if (container) {
+            const root = createRoot(container);
+            root.render(React.createElement(CompactUserTimer));
+        }
+
+        // Register widget lifecycle events
+        if (typeof YT !== 'undefined' && YT.onWidgetReady) {
+            YT.onWidgetReady(() => {
+                console.log('Compact User Timer widget ready for user:', currentUser);
+            });
+        }
+    </script>
+</body>
+</html>
