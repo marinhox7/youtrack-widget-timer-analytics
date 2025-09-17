@@ -11,7 +11,6 @@ import { YouTrackAPI, processTimerData, calculateStats, formatDuration } from '.
 import { TimerEntry, TimerStats, ProjectTimerStats, UserTimerStats } from '../../types';
 import { Logger } from '../../services/logger';
 import AdminConfirmDialog from '../../components/AdminConfirmDialog';
-import { useTheme } from '../../hooks/useTheme';
 import './TimerAnalytics.css';
 
 // Register Chart.js components
@@ -64,7 +63,6 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
 
   const logger = Logger.getLogger('TimerAnalytics');
   const api = new YouTrackAPI(host);
-  const { currentTheme, isDark, isYouTrackDark, setTheme, toggleTheme } = useTheme();
 
   const fetchAnalyticsData = useCallback(async () => {
     try {
@@ -135,7 +133,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     });
   }, [userPermissions.isSystemAdmin, logger]);
 
-  // Confirm cancel timer with enhanced audit logging
+  // Confirm cancel timer with timer-teste specific logic
   const handleConfirmCancelTimer = useCallback(async (reason?: string) => {
     const timer = confirmDialog.timer;
     if (!timer) return;
@@ -143,8 +141,9 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     try {
       setCancelingTimer(timer.issueId);
       setConfirmDialog({ isOpen: false });
+      setError(null);
 
-      logger.info('System-admin cancelling timer with confirmation', {
+      logger.info('[TIMER-TESTE] Initiating timer cancellation', {
         issueId: timer.issueId,
         issueKey: timer.issueKey,
         username: timer.username,
@@ -152,41 +151,57 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         reason
       });
 
-      // Call enhanced cancelTimer with context
-      await api.cancelTimer(timer.issueId, {
-        targetUsername: timer.username,
+      // Usar novo método específico para cancelamento
+      await api.cancelSpecificUserTimer(timer.issueId, timer.username);
+
+      logger.info('[TIMER-TESTE] Timer cancellation request sent', {
+        issueId: timer.issueId,
         issueKey: timer.issueKey,
-        adminUsername: userPermissions.userInfo?.login,
-        reason
+        username: timer.username
       });
 
-      // Refresh data to reflect changes
+      // Aguardar tempo extra para workflow processar
+      // Timer-teste tem logs detalhados, então pode ser um pouco mais lento
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Refresh dados para mostrar mudanças
       await fetchAnalyticsData();
 
-      logger.info('Timer cancelled successfully by system-admin', {
+      logger.info('[TIMER-TESTE] Timer cancelled successfully and data refreshed', {
         issueId: timer.issueId,
         issueKey: timer.issueKey,
-        username: timer.username,
-        reason
+        username: timer.username
       });
-
-      setError(null);
 
     } catch (error: any) {
-      logger.error('Failed to cancel timer', error as Error, {
+      logger.error('[TIMER-TESTE] Failed to cancel timer', error as Error, {
         issueId: timer.issueId,
         issueKey: timer.issueKey,
-        username: timer.username,
-        reason
+        username: timer.username
       });
 
-      if (error.code === 'CANCEL_TIMER_PERMISSION_DENIED' || error.code === 'CANCEL_TIMER_SYSTEM_ADMIN_REQUIRED') {
-        setError('Permissões insuficientes para cancelar timer. Acesso system-admin necessário.');
-      } else if (error.code === 'ISSUE_OR_FIELD_NOT_FOUND') {
-        setError(`Issue ${timer.issueKey} não encontrado ou campo Timer Youtrack não disponível`);
+      // Mapear erros específicos para mensagens user-friendly
+      let errorMessage = '';
+
+      if (error.message?.includes('Permissão negada') || error.message?.includes('permission')) {
+        errorMessage = `Permissão negada: Apenas system-admin e project-admin podem cancelar timers de outros usuários`;
+      } else if (error.message?.includes('não encontrada') || error.message?.includes('not found')) {
+        errorMessage = `Timer de ${timer.username} não encontrado em ${timer.issueKey}. Pode já ter sido cancelado.`;
+      } else if (error.message?.includes('campo Timer Cancel Target não existe')) {
+        errorMessage = `Erro de configuração: Campo "Timer Cancel Target" não existe no projeto. Entre em contato com o administrador.`;
+      } else if (error.message?.includes('network') || error.message?.includes('timeout')) {
+        errorMessage = `Erro de conexão. Verifique sua internet e tente novamente.`;
       } else {
-        setError(`Falha ao cancelar timer para ${timer.issueKey}: ${error.message}`);
+        errorMessage = `Falha ao cancelar timer de ${timer.username} em ${timer.issueKey}: ${error.message}`;
       }
+
+      setError(errorMessage);
+
+      // Auto-clear error após 15 segundos (mais tempo por ser teste)
+      setTimeout(() => {
+        setError(null);
+      }, 15000);
+
     } finally {
       setCancelingTimer(null);
     }
@@ -383,6 +398,9 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       <div className="widget-container timer-analytics">
         <div className="analytics-header">
           <h2>📊 Timer Analytics</h2>
+          <div className="test-indicator">
+            <span className="test-badge">🧪 TIMER-TESTE</span>
+          </div>
           <div className="header-controls">
             <span className="loading-text">Carregando...</span>
           </div>
@@ -401,6 +419,9 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       <div className="widget-container timer-analytics">
         <div className="analytics-header">
           <h2>📊 Timer Analytics</h2>
+          <div className="test-indicator">
+            <span className="test-badge">🧪 TIMER-TESTE</span>
+          </div>
           <div className="header-controls">
             <button onClick={fetchAnalyticsData} className="refresh-button">
               ↻ Tentar Novamente
@@ -437,6 +458,9 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       {/* Header */}
       <div className="analytics-header">
         <h2>📊 Timer Analytics</h2>
+        <div className="test-indicator">
+          <span className="test-badge">🧪 TIMER-TESTE</span>
+        </div>
         <div className="header-controls">
           <select
             value={selectedTimeRange}
@@ -458,26 +482,6 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
             <option value="average">Duração Média</option>
           </select>
 
-          {/* Theme Toggle */}
-          <div className="theme-controls">
-            <select
-              value={currentTheme}
-              onChange={(e) => setTheme(e.target.value as any)}
-              className="theme-select"
-              title="Selecionar tema"
-            >
-              <option value="auto">🌓 Auto (YouTrack)</option>
-              <option value="light">☀️ Claro</option>
-              <option value="dark">🌙 Escuro</option>
-            </select>
-            <button
-              onClick={toggleTheme}
-              className="theme-toggle-btn"
-              title={`Alternar para tema ${isDark ? 'claro' : 'escuro'}`}
-            >
-              {isDark ? '☀️' : '🌙'}
-            </button>
-          </div>
 
           <button onClick={fetchAnalyticsData} className="refresh-button" disabled={loading}>
             {loading ? '⟳' : '↻'} Atualizar

@@ -1008,6 +1008,153 @@ export class YouTrackAPI {
   }
 
   /**
+   * Cancel specific user's timer by communicating target user to workflow
+   * Compatible with timer-teste workflow
+   */
+  async cancelSpecificUserTimer(issueId: string, targetUsername: string): Promise<boolean> {
+    const requestId = RequestIdGenerator.generate();
+
+    try {
+      this.logger.info('[TIMER-TESTE] Starting operation', {
+        operation: 'cancelSpecificUserTimer',
+        issueId,
+        targetUsername,
+        timestamp: new Date().toISOString(),
+        requestId
+      });
+
+      // PASSO 1: Definir qual usuário deve ter timer cancelado
+      // Usando campo Timer Cancel Target para comunicação com workflow
+      await this.makeRequest(
+        `issues/${issueId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: {
+            customFields: [
+              {
+                name: 'Timer Cancel Target',
+                value: targetUsername
+              }
+            ]
+          }
+        },
+        requestId
+      );
+
+      this.logger.info('[TIMER-TESTE] API call successful', {
+        step: 'setTargetField',
+        issueId,
+        targetUsername,
+        responseStatus: 'success',
+        requestId
+      });
+
+      // PASSO 2: Aguardar um momento para garantir que o campo foi salvo
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // PASSO 3: Trigger do cancelamento via Timer Youtrack field
+      await this.makeRequest(
+        `issues/${issueId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: {
+            customFields: [
+              {
+                name: 'Timer Youtrack',
+                value: { name: 'Cancel Timer' }
+              }
+            ]
+          }
+        },
+        requestId
+      );
+
+      this.logger.info('[TIMER-TESTE] API call successful', {
+        step: 'triggerCancel',
+        issueId,
+        targetUsername,
+        responseStatus: 'success',
+        requestId
+      });
+
+      this.logger.info('[TIMER-TESTE] Specific user timer cancellation request sent successfully', {
+        issueId,
+        targetUsername,
+        requestId
+      });
+      return true;
+
+    } catch (error: any) {
+      this.logger.error('[TIMER-TESTE] Failed to cancel specific user timer', error as Error, {
+        issueId,
+        targetUsername,
+        requestId
+      });
+
+      // Melhorar mensagens de erro
+      if (error.status === 403) {
+        throw new Error('Permissão negada: Apenas system-admin e project-admin podem cancelar timers de outros usuários');
+      } else if (error.status === 404) {
+        throw new Error('Issue não encontrada ou campo Timer Cancel Target não existe');
+      } else if (error.status === 400) {
+        throw new Error('Dados inválidos fornecidos para o cancelamento');
+      } else {
+        throw new Error(`Falha ao cancelar timer de ${targetUsername}: ${error.message || 'Erro desconhecido'}`);
+      }
+    }
+  }
+
+  /**
+   * Cancel own timer (traditional method)
+   */
+  async cancelOwnTimer(issueId: string): Promise<boolean> {
+    const requestId = RequestIdGenerator.generate();
+
+    try {
+      this.logger.info('[TIMER-TESTE] Starting operation', {
+        operation: 'cancelOwnTimer',
+        issueId,
+        timestamp: new Date().toISOString(),
+        requestId
+      });
+
+      // Para cancelamento próprio, apenas definir Timer Youtrack = Cancel Timer
+      // Workflow vai detectar que não há Timer Cancel Target e usar currentUser
+      await this.makeRequest(
+        `issues/${issueId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: {
+            customFields: [
+              {
+                name: 'Timer Youtrack',
+                value: { name: 'Cancel Timer' }
+              }
+            ]
+          }
+        },
+        requestId
+      );
+
+      this.logger.info('[TIMER-TESTE] Own timer cancellation request sent successfully', { issueId, requestId });
+      return true;
+
+    } catch (error: any) {
+      this.logger.error('[TIMER-TESTE] Failed to cancel own timer', error as Error, { issueId, requestId });
+      throw new Error(`Falha ao cancelar próprio timer: ${error.message || 'Erro desconhecido'}`);
+    }
+  }
+
+  /**
    * Get audit logs for timer cancellations (admin only)
    */
   async getTimerAuditLogs(limit: number = 50): Promise<any[]> {

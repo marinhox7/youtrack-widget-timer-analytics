@@ -360,7 +360,6 @@ export interface WidgetDimensions {
 export interface WidgetSettings {
   refreshInterval?: number;
   autoRefresh?: boolean;
-  theme?: 'light' | 'dark' | 'auto';
   showStats?: boolean;
   showProjectBreakdown?: boolean;
   showUserBreakdown?: boolean;
