@@ -1,8 +1,8 @@
 {
-  "name": "youtrack-timer-analytics-suite",
-  "title": "YouTrack Timer Analytics Suite",
-  "description": "Suite completa de analytics e monitoramento de timers para equipes e projetos",
-  "version": "2.1.9",
+  "name": "youtrack-timer-analytics",
+  "title": "YouTrack Timer Analytics",
+  "description": "Dashboard avançado de analytics e monitoramento de timers com funcionalidades administrativas",
+  "version": "3.0.0",
   "icon": "icon.svg",
   "vendor": {
     "name": "Braip Development Team",
@@ -11,26 +11,9 @@
   },
   "widgets": [
     {
-      "key": "timer-dashboard-global",
-      "name": "Timer Dashboard Global",
-      "description": "Widget global para dashboards com timers ativos de toda organização",
-      "extensionPoint": "DASHBOARD_WIDGET",
-      "indexPath": "widgets/timer-dashboard/index.html",
-      "permissions": [
-        "READ_ISSUE",
-        "READ_PROJECT",
-        "PRIVATE_READ_ISSUE",
-        "READ_USER"
-      ],
-      "defaultDimensions": {
-        "width": "8fr",
-        "height": "4fr"
-      }
-    },
-    {
       "key": "timer-analytics-advanced",
-      "name": "Timer Analytics Avançado",
-      "description": "Dashboard completo com gráficos e insights de produtividade",
+      "name": "Timer Analytics",
+      "description": "Dashboard completo com gráficos, insights de produtividade e controles administrativos",
       "extensionPoint": "DASHBOARD_WIDGET",
       "indexPath": "widgets/timer-analytics/index.html",
       "permissions": [
@@ -42,56 +25,7 @@
       ],
       "defaultDimensions": {
         "width": "12fr",
-        "height": "6fr"
-      }
-    },
-    {
-      "key": "user-timer-widget",
-      "name": "Meus Timers",
-      "description": "Widget pessoal para monitoramento individual de timers",
-      "extensionPoint": "DASHBOARD_WIDGET",
-      "indexPath": "widgets/user-timer/index.html",
-      "permissions": [
-        "READ_ISSUE",
-        "READ_PROJECT",
-        "PRIVATE_READ_ISSUE"
-      ],
-      "defaultDimensions": {
-        "width": "6fr",
-        "height": "4fr"
-      }
-    },
-    {
-      "key": "project-dashboard-widget",
-      "name": "Dashboard do Projeto",
-      "description": "Visão completa dos timers e equipe por projeto",
-      "extensionPoint": "PROJECT_SETTINGS",
-      "indexPath": "widgets/project-dashboard/index.html",
-      "permissions": [
-        "READ_ISSUE",
-        "READ_PROJECT",
-        "PRIVATE_READ_ISSUE",
-        "READ_USER"
-      ],
-      "expectedDimensions": {
-        "width": 800,
-        "height": 600
-      }
-    },
-    {
-      "key": "user-timer-compact",
-      "name": "Meus Timers (Compacto)",
-      "description": "Versão compacta do widget pessoal",
-      "extensionPoint": "DASHBOARD_WIDGET",
-      "indexPath": "widgets/user-timer/compact/index.html",
-      "permissions": [
-        "READ_ISSUE",
-        "READ_PROJECT",
-        "PRIVATE_READ_ISSUE"
-      ],
-      "defaultDimensions": {
-        "width": "4fr",
-        "height": "3fr"
+        "height": "8fr"
       }
     }
   ]

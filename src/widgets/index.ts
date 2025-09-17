@@ -1,13 +1,10 @@
 /**
- * Widget Registry - Central hub for all timer dashboard widgets
+ * Widget Registry - Timer Analytics Widget
  * Manages widget initialization, configuration, and lifecycle
  */
 
 import React from 'react';
-import TimerDashboard from './timer-dashboard/TimerDashboard';
 import TimerAnalytics from './timer-analytics/TimerAnalytics';
-import UserTimer from './user-timer/UserTimer';
-import ProjectDashboard from './project-dashboard/ProjectDashboard';
 
 export interface WidgetConfig {
   key: string;
@@ -24,30 +21,10 @@ export interface WidgetConfig {
 }
 
 export const WIDGET_REGISTRY: Record<string, WidgetConfig> = {
-  'timer-dashboard-global': {
-    key: 'timer-dashboard-global',
-    name: 'Timer Dashboard Global',
-    description: 'Widget global para dashboards com timers ativos de toda organização',
-    component: TimerDashboard,
-    defaultProps: {
-      refreshInterval: 30000,
-      showUsers: true,
-      showProjects: true,
-      maxItems: 50,
-      sortBy: 'time'
-    },
-    permissions: ['READ_ISSUE', 'READ_PROJECT', 'PRIVATE_READ_ISSUE', 'READ_USER'],
-    extensionPoint: 'DASHBOARD_WIDGET',
-    dimensions: {
-      width: '8fr',
-      height: '4fr'
-    }
-  },
-
   'timer-analytics-advanced': {
     key: 'timer-analytics-advanced',
-    name: 'Timer Analytics Avançado',
-    description: 'Dashboard completo com gráficos e insights de produtividade',
+    name: 'Timer Analytics',
+    description: 'Dashboard completo com gráficos, insights de produtividade e controles administrativos',
     component: TimerAnalytics,
     defaultProps: {
       refreshInterval: 60000,
@@ -56,87 +33,11 @@ export const WIDGET_REGISTRY: Record<string, WidgetConfig> = {
       showTrends: true,
       timeRange: 'day'
     },
-    permissions: ['READ_ISSUE', 'READ_PROJECT', 'PRIVATE_READ_ISSUE', 'READ_USER'],
+    permissions: ['READ_ISSUE', 'READ_PROJECT', 'PRIVATE_READ_ISSUE', 'READ_USER', 'UPDATE_ISSUE'],
     extensionPoint: 'DASHBOARD_WIDGET',
     dimensions: {
       width: '12fr',
-      height: '6fr'
-    }
-  },
-
-  'user-timer-widget': {
-    key: 'user-timer-widget',
-    name: 'Meus Timers',
-    description: 'Widget pessoal para monitoramento individual de timers',
-    component: UserTimer,
-    defaultProps: {
-      refreshInterval: 30000,
-      showQuickActions: true,
-      compactMode: false
-    },
-    permissions: ['READ_ISSUE', 'READ_PROJECT', 'PRIVATE_READ_ISSUE'],
-    extensionPoint: 'DASHBOARD_WIDGET',
-    dimensions: {
-      width: '6fr',
-      height: '4fr'
-    }
-  },
-
-  'user-timer-compact': {
-    key: 'user-timer-compact',
-    name: 'Meus Timers (Compacto)',
-    description: 'Versão compacta do widget pessoal',
-    component: UserTimer,
-    defaultProps: {
-      refreshInterval: 30000,
-      showQuickActions: false,
-      compactMode: true
-    },
-    permissions: ['READ_ISSUE', 'READ_PROJECT', 'PRIVATE_READ_ISSUE'],
-    extensionPoint: 'DASHBOARD_WIDGET',
-    dimensions: {
-      width: '4fr',
-      height: '3fr'
-    }
-  },
-
-  'project-dashboard-widget': {
-    key: 'project-dashboard-widget',
-    name: 'Dashboard do Projeto',
-    description: 'Visão completa dos timers e equipe por projeto',
-    component: ProjectDashboard,
-    defaultProps: {
-      refreshInterval: 45000,
-      showTeamBreakdown: true,
-      showIssueBreakdown: true,
-      showTrends: true
-    },
-    permissions: ['READ_ISSUE', 'READ_PROJECT', 'PRIVATE_READ_ISSUE', 'READ_USER'],
-    extensionPoint: 'PROJECT_SETTINGS',
-    dimensions: {
-      width: 800,
-      height: 600
-    }
-  },
-
-  'timer-dashboard-simple': {
-    key: 'timer-dashboard-simple',
-    name: 'Timer Dashboard Simples',
-    description: 'Versão compacta do dashboard para espaços menores',
-    component: TimerDashboard,
-    defaultProps: {
-      refreshInterval: 30000,
-      showUsers: false,
-      showProjects: false,
-      maxItems: 20,
-      sortBy: 'time',
-      compactMode: true
-    },
-    permissions: ['READ_ISSUE', 'READ_PROJECT', 'PRIVATE_READ_ISSUE'],
-    extensionPoint: 'DASHBOARD_WIDGET',
-    dimensions: {
-      width: '4fr',
-      height: '3fr'
+      height: '8fr'
     }
   }
 };

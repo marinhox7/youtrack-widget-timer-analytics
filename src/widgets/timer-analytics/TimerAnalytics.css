@@ -857,3 +857,291 @@
 .widget-container .show-more-btn:hover {
   transform: translateY(-1px) !important;
 }
+
+/* ============= DARK THEME SUPPORT ============= */
+
+/* Theme Controls */
+.widget-container .theme-controls {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.widget-container .theme-select {
+  padding: 4px 8px !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 4px !important;
+  background-color: white !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  transition: border-color 0.2s !important;
+}
+
+.widget-container .theme-select:hover {
+  border-color: #007acc !important;
+}
+
+.widget-container .theme-toggle-btn {
+  background: none !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 32px !important;
+  height: 28px !important;
+}
+
+.widget-container .theme-toggle-btn:hover {
+  border-color: #007acc !important;
+  background-color: rgba(0, 122, 204, 0.1) !important;
+}
+
+/* Dark Theme Variables and Overrides */
+.widget-container.timer-analytics.dark,
+.widget-container.timer-analytics[data-theme="dark"] {
+  --bg-primary: #1a1a1a !important;
+  --bg-secondary: #2d2d2d !important;
+  --bg-tertiary: #3a3a3a !important;
+  --bg-card: #2d2d2d !important;
+  --bg-hover: #3a3a3a !important;
+  --text-primary: #ffffff !important;
+  --text-secondary: #b3b3b3 !important;
+  --text-muted: #888888 !important;
+  --border-color: #404040 !important;
+  --border-hover: #007acc !important;
+  --accent-color: #007acc !important;
+  --accent-hover: #0056b3 !important;
+}
+
+/* Main Container Dark Theme */
+.widget-container.timer-analytics.dark {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Header Dark Theme */
+.widget-container.timer-analytics.dark .analytics-header {
+  background-color: var(--bg-secondary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.widget-container.timer-analytics.dark .analytics-header h2 {
+  color: var(--text-primary) !important;
+}
+
+/* Controls Dark Theme */
+.widget-container.timer-analytics.dark .control-select,
+.widget-container.timer-analytics.dark .theme-select {
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.widget-container.timer-analytics.dark .control-select:hover,
+.widget-container.timer-analytics.dark .theme-select:hover {
+  border-color: var(--accent-color) !important;
+}
+
+.widget-container.timer-analytics.dark .theme-toggle-btn {
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+  background-color: var(--bg-tertiary) !important;
+}
+
+.widget-container.timer-analytics.dark .theme-toggle-btn:hover {
+  border-color: var(--accent-color) !important;
+  background-color: rgba(0, 122, 204, 0.2) !important;
+}
+
+/* Metric Cards Dark Theme */
+.widget-container.timer-analytics.dark .metric-card {
+  background-color: var(--bg-card) !important;
+  border-left-color: var(--accent-color) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.widget-container.timer-analytics.dark .metric-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.widget-container.timer-analytics.dark .metric-card.critical {
+  background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+.widget-container.timer-analytics.dark .metric-value {
+  color: var(--text-primary) !important;
+}
+
+.widget-container.timer-analytics.dark .metric-label {
+  color: var(--text-muted) !important;
+}
+
+/* Active Issues Section Dark Theme */
+.widget-container.timer-analytics.dark .active-issues-section h3 {
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--accent-color) !important;
+}
+
+.widget-container.timer-analytics.dark .admin-notice {
+  background-color: rgba(0, 122, 204, 0.15) !important;
+  border-color: rgba(0, 122, 204, 0.3) !important;
+}
+
+.widget-container.timer-analytics.dark .admin-text {
+  color: #66b3ff !important;
+}
+
+/* Issue Cards Dark Theme */
+.widget-container.timer-analytics.dark .active-issue-card {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.widget-container.timer-analytics.dark .active-issue-card:hover {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 4px 12px rgba(0, 122, 204, 0.3) !important;
+}
+
+.widget-container.timer-analytics.dark .issue-id {
+  color: #66b3ff !important;
+}
+
+.widget-container.timer-analytics.dark .issue-project {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-secondary) !important;
+}
+
+.widget-container.timer-analytics.dark .issue-title {
+  color: var(--text-primary) !important;
+}
+
+.widget-container.timer-analytics.dark .timer-duration {
+  color: #4caf50 !important;
+}
+
+.widget-container.timer-analytics.dark .timer-user {
+  color: var(--text-muted) !important;
+}
+
+/* Charts Dark Theme */
+.widget-container.timer-analytics.dark .chart-container {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+}
+
+.widget-container.timer-analytics.dark .chart-container h3 {
+  color: var(--text-secondary) !important;
+}
+
+/* Breakdowns Dark Theme */
+.widget-container.timer-analytics.dark .breakdown-container {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+}
+
+.widget-container.timer-analytics.dark .breakdown-container h3 {
+  color: var(--text-secondary) !important;
+}
+
+.widget-container.timer-analytics.dark .breakdown-item {
+  background-color: var(--bg-tertiary) !important;
+}
+
+.widget-container.timer-analytics.dark .breakdown-item:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+.widget-container.timer-analytics.dark .breakdown-name {
+  color: var(--text-primary) !important;
+}
+
+.widget-container.timer-analytics.dark .breakdown-detail {
+  color: var(--text-muted) !important;
+}
+
+.widget-container.timer-analytics.dark .breakdown-count {
+  color: #66b3ff !important;
+}
+
+.widget-container.timer-analytics.dark .breakdown-duration {
+  color: var(--text-muted) !important;
+}
+
+/* Footer Dark Theme */
+.widget-container.timer-analytics.dark .analytics-footer {
+  background-color: var(--bg-secondary) !important;
+  border-top-color: var(--border-color) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Loading/Error States Dark Theme */
+.widget-container.timer-analytics.dark .loading-container,
+.widget-container.timer-analytics.dark .error-container,
+.widget-container.timer-analytics.dark .empty-state {
+  color: var(--text-secondary) !important;
+}
+
+.widget-container.timer-analytics.dark .loading-container span {
+  color: var(--text-secondary) !important;
+}
+
+.widget-container.timer-analytics.dark .loading-container small {
+  color: var(--text-muted) !important;
+}
+
+.widget-container.timer-analytics.dark .loader {
+  border-color: #333333 !important;
+  border-top-color: var(--accent-color) !important;
+}
+
+.widget-container.timer-analytics.dark .error-content h3 {
+  color: #ff6b6b !important;
+}
+
+.widget-container.timer-analytics.dark .error-content p {
+  color: var(--text-muted) !important;
+}
+
+.widget-container.timer-analytics.dark .no-active-issues {
+  color: var(--text-muted) !important;
+}
+
+.widget-container.timer-analytics.dark .no-active-issues p {
+  color: var(--text-muted) !important;
+}
+
+/* Auto Theme - Follows YouTrack Theme Detection */
+.widget-container.timer-analytics[data-theme="auto"].dark {
+  /* Inherits all dark theme styles */
+}
+
+/* Light Theme Explicit Overrides (when user selects light theme) */
+.widget-container.timer-analytics[data-theme="light"] {
+  background-color: #f8f9fa !important;
+  color: #212529 !important;
+}
+
+.widget-container.timer-analytics[data-theme="light"] .analytics-header {
+  background-color: #f8f9fa !important;
+  border-bottom-color: #dee2e6 !important;
+}
+
+.widget-container.timer-analytics[data-theme="light"] .analytics-header h2 {
+  color: #212529 !important;
+}
+
+/* Responsive Dark Theme Adjustments */
+@media (max-width: 768px) {
+  .widget-container.timer-analytics.dark .theme-controls {
+    order: -1 !important;
+    width: 100% !important;
+    justify-content: center !important;
+    margin-bottom: 8px !important;
+  }
+}

@@ -1,7 +1,7 @@
 {
-  "name": "timer-dashboard-widget",
+  "name": "youtrack-timer-analytics",
   "private": true,
-  "version": "1.0.0",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,10 +11,10 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "pack": "rm -rf timer-dashboard-widget.zip && cd dist/ && bestzip ../timer-dashboard-widget.zip *",
+    "pack": "rm -rf youtrack-timer-analytics.zip && cd dist/ && bestzip ../youtrack-timer-analytics.zip *",
     "upload": "youtrack-app upload dist",
     "validate": "youtrack-app validate dist",
-    "copy-assets": "cp -r dist/widgets/timer-dashboard/* dist/widgets/timer-dashboard/ && cp -r dist/widgets/timer-analytics/* dist/widgets/timer-analytics/ && cp -r dist/widgets/user-timer/* dist/widgets/user-timer/ && cp -r dist/widgets/project-dashboard/* dist/widgets/project-dashboard/"
+    "copy-assets": "cp -r dist/widgets/timer-analytics/* dist/widgets/timer-analytics/"
   },
   "dependencies": {
     "@types/throttle-debounce": "^5.0.2",

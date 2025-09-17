@@ -11,6 +11,7 @@ import { YouTrackAPI, processTimerData, calculateStats, formatDuration } from '.
 import { TimerEntry, TimerStats, ProjectTimerStats, UserTimerStats } from '../../types';
 import { Logger } from '../../services/logger';
 import AdminConfirmDialog from '../../components/AdminConfirmDialog';
+import { useTheme } from '../../hooks/useTheme';
 import './TimerAnalytics.css';
 
 // Register Chart.js components
@@ -63,6 +64,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
 
   const logger = Logger.getLogger('TimerAnalytics');
   const api = new YouTrackAPI(host);
+  const { currentTheme, isDark, isYouTrackDark, setTheme, toggleTheme } = useTheme();
 
   const fetchAnalyticsData = useCallback(async () => {
     try {
@@ -442,6 +444,27 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
             <option value="duration">Duração Total</option>
             <option value="average">Duração Média</option>
           </select>
+
+          {/* Theme Toggle */}
+          <div className="theme-controls">
+            <select
+              value={currentTheme}
+              onChange={(e) => setTheme(e.target.value as any)}
+              className="theme-select"
+              title="Selecionar tema"
+            >
+              <option value="auto">🌓 Auto (YouTrack)</option>
+              <option value="light">☀️ Claro</option>
+              <option value="dark">🌙 Escuro</option>
+            </select>
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle-btn"
+              title={`Alternar para tema ${isDark ? 'claro' : 'escuro'}`}
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
+          </div>
 
           <button onClick={fetchAnalyticsData} className="refresh-button" disabled={loading}>
             {loading ? '⟳' : '↻'} Atualizar
