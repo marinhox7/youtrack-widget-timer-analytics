@@ -77,12 +77,14 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
     }
   }, [api, selectedProject, selectedTimeRange]);
 
+
   // Auto refresh
   useEffect(() => {
     fetchAnalyticsData();
     const interval = setInterval(fetchAnalyticsData, refreshInterval);
     return () => clearInterval(interval);
   }, [fetchAnalyticsData, refreshInterval]);
+
 
   // Calculate trends data
   const calculateTrends = (timers: TimerEntry[], range: string) => {
@@ -362,12 +364,12 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
                 </div>
                 <div className="issue-title">{timer.issueSummary}</div>
                 <div className="issue-meta">
-                  <span className="timer-duration">⏱️ {formatDuration(timer.durationMs, { precision: 'medium' })}</span>
+                  <span className="timer-duration">⏱️ {formatDuration(timer.elapsedMs, { precision: 'medium' })}</span>
                   <span className="timer-user">👤 {timer.username}</span>
                 </div>
                 <div className="issue-status">
-                  <span className={`status-badge ${timer.issueState?.toLowerCase().replace(' ', '-')}`}>
-                    {timer.issueState || 'N/A'}
+                  <span className={`status-badge ${timer.state?.toLowerCase().replace(' ', '-').replace('/', '-') || 'open'}`}>
+                    {timer.state && timer.state !== 'N/A' ? timer.state : 'Aberto'}
                   </span>
                 </div>
               </div>

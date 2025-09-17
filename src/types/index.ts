@@ -62,7 +62,7 @@ export interface YouTrackUser {
   banned: boolean;
   tags?: YouTrackTag[];
   avatarUrl?: string;
-  profiles?: YouTrackUserProfile;
+  profiles?: YouTrackUserProfile[];
 }
 
 /**
@@ -160,7 +160,7 @@ export interface TimerEntry {
   priority?: string;
   state?: string;
   assignees?: string[];
-  tags?: string[];
+  tags?: YouTrackTag[];
   lastUpdated: number;
 }
 
@@ -547,6 +547,12 @@ export interface YouTrackUserProfile {
   appearance?: YouTrackAppearanceProfile;
   timetracking?: YouTrackTimeTrackingProfile;
   notifications?: YouTrackNotificationProfile;
+  permission?: YouTrackUserPermission;
+}
+
+export interface YouTrackUserPermission {
+  name: string;
+  type?: string;
 }
 
 export interface YouTrackAppearanceProfile {

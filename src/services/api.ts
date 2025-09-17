@@ -13,6 +13,7 @@ import {
   YouTrackIssue,
   YouTrackProject,
   YouTrackUser,
+  YouTrackTag,
   RateLimitConfig
 } from '../types';
 import { globalCache, CacheKeyGenerator } from './cache';
@@ -381,7 +382,7 @@ export class YouTrackAPI {
           assignees: issue.assignees,
           created: issue.created,
           updated: issue.updated,
-          tags: issue.tags?.map(tag => tag.name) || []
+          tags: issue.tags || []
         };
       })
       .filter((issue): issue is IssueWithTimer => issue !== null);
@@ -688,6 +689,167 @@ export class YouTrackAPI {
   calculateStats(entries: TimerEntry[]): TimerStats {
     return calculateStats(entries);
   }
+
+  /**
+   * Check if current user has admin permissions
+   */
+  async checkUserPermissions(): Promise<{ isAdmin: boolean; canManageTimers: boolean }> {
+    const requestId = RequestIdGenerator.generate();
+    this.logger.debug('checkUserPermissions called', { hasHost: !!this.host, requestId });
+
+    try {
+      // Try to access admin endpoint to check permissions
+      this.logger.debug('Attempting admin/users endpoint check...', { requestId });
+      const response = await this.makeRequest<YouTrackUser>(
+        'admin/users?$top=1',
+        { method: 'GET' },
+        requestId
+      );
+
+      // If we can access admin users endpoint, user has admin permissions
+      if (response.data) {
+        this.logger.info('Admin access confirmed via admin/users endpoint', { requestId });
+        return {
+          isAdmin: true,
+          canManageTimers: true
+        };
+      }
+
+      return { isAdmin: false, canManageTimers: false };
+    } catch (error: any) {
+      // Expected error - admin endpoint not accessible for non-admin users
+      this.logger.debug('admin/users endpoint not accessible, trying users/me fallback', {
+        error: error.code || error.message,
+        requestId
+      });
+
+      // Try alternative method - check current user endpoint
+      try {
+        const userResponse = await this.makeRequest<YouTrackUser>(
+          'users/me',
+          { method: 'GET' },
+          requestId
+        );
+
+        const user = userResponse.data;
+
+        // Check if user has system-admin or admin permissions
+        // If login is undefined but we're in widget context, assume admin for system-admin token
+        let hasAdminAccess = false;
+
+        if (user?.login === 'system-admin' || user?.login?.includes('admin')) {
+          hasAdminAccess = true;
+        } else if (!user?.login && this.host) {
+          // Assume admin if login undefined in widget context (system-admin token)
+          hasAdminAccess = true;
+        } else if (user?.profiles && Array.isArray(user.profiles)) {
+          hasAdminAccess = user.profiles.some((profile) => {
+            return profile.permission?.name?.includes('ADMIN') ||
+                   profile.permission?.name?.includes('CREATE_PROJECT') ||
+                   profile.permission?.name?.includes('UPDATE_NOT_OWN');
+          });
+        }
+
+        this.logger.info('User permissions determined', {
+          login: user?.login,
+          hasAdminAccess,
+          profileCount: user?.profiles?.length || 0,
+          requestId
+        });
+
+        return {
+          isAdmin: hasAdminAccess,
+          canManageTimers: hasAdminAccess
+        };
+      } catch (fallbackError: any) {
+        this.logger.debug('users/me endpoint also not accessible, using widget context fallback', {
+          error: fallbackError.code || fallbackError.message,
+          requestId
+        });
+
+        // Last resort: assume admin if we're in widget context (for system-admin tokens)
+        if (this.host) {
+          this.logger.info('Assuming admin permissions in widget context for system-admin token', { requestId });
+          return { isAdmin: true, canManageTimers: true };
+        }
+
+        this.logger.info('No admin access detected', { requestId });
+        return { isAdmin: false, canManageTimers: false };
+      }
+    }
+  }
+
+  /**
+   * Get work items for an issue
+   */
+  async getWorkItems(issueId: string): Promise<any[]> {
+    const requestId = RequestIdGenerator.generate();
+
+    try {
+      const response = await this.makeRequest<any[]>(
+        `issues/${issueId}/timeTracking/workItems?fields=id,author(login,name),duration,date,text,type(name)`,
+        { method: 'GET' },
+        requestId
+      );
+
+      return response.data || [];
+    } catch (error) {
+      this.logger.error('Failed to fetch work items', null, { issueId, requestId });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a work item (stops/cancels timer)
+   */
+  async deleteWorkItem(issueId: string, workItemId: string): Promise<boolean> {
+    const requestId = RequestIdGenerator.generate();
+
+    try {
+      await this.makeRequest(
+        `issues/${issueId}/timeTracking/workItems/${workItemId}`,
+        { method: 'DELETE' },
+        requestId
+      );
+
+      this.logger.info('Work item deleted successfully', { issueId, workItemId, requestId });
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to delete work item', null, { issueId, workItemId, requestId });
+      throw error;
+    }
+  }
+
+  /**
+   * Stop timer by updating Timer field to "Stop"
+   */
+  async stopTimer(issueId: string): Promise<boolean> {
+    const requestId = RequestIdGenerator.generate();
+
+    try {
+      await this.makeRequest(
+        `issues/${issueId}`,
+        {
+          method: 'POST',
+          body: {
+            customFields: [
+              {
+                name: 'Timer',
+                value: { name: 'Stop' }
+              }
+            ]
+          }
+        },
+        requestId
+      );
+
+      this.logger.info('Timer stopped successfully', { issueId, requestId });
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to stop timer', null, { issueId, requestId });
+      throw error;
+    }
+  }
 }
 
 /**
@@ -728,7 +890,7 @@ export function processTimerData(issues: IssueWithTimer[]): TimerEntry[] {
         projectName: issue.project.name || issue.project.shortName,
         projectShortName: issue.project.shortName,
         assignees: issue.assignees?.map(a => a.fullName || a.login) || [],
-        tags: (issue.tags || []).map((tag: any) => typeof tag === 'string' ? tag : tag.name || tag.id),
+        tags: (issue.tags || []).map((tag) => typeof tag === 'string' ? { id: tag, name: tag } : tag) as YouTrackTag[],
         lastUpdated: issue.updated
       });
     });

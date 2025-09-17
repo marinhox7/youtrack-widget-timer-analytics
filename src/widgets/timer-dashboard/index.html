@@ -1,22 +1,23 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timer Dashboard Widget</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <!-- Importa o bundle fixo gerado pelo Vite -->
-    <script type="module" src="./main.js"></script>
-    <script type="module">
-      import { YTApp } from "@jetbrains/youtrack-apps-tools";
-
-      YTApp.register({
-        extensionPoint: "DASHBOARD_WIDGET",
-        onInit: (context) => {
-          console.log("[Timer Widget] Registrado com sucesso", context);
-        },
-      });
-    </script>
-  </body>
+    <style>
+        * {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+        }
+    </style>
+    <link rel="stylesheet" href="assets/TimerDashboard-Bm7WCMSv.css">
+</head>
+<body>
+    <div id="app"></div>
+    <script type="module" src="assets/main.js"></script>
+</body>
 </html>

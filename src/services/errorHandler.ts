@@ -292,7 +292,7 @@ export class ErrorHandler {
   ): (...args: T) => Promise<R> {
     return async (...args: T): Promise<R> => {
       try {
-        if (this.config.retryFailedRequests && retryConfig !== false) {
+        if (this.config.retryFailedRequests && typeof retryConfig === 'object') {
           return await this.withRetry(() => fn(...args), retryConfig);
         } else {
           return await fn(...args);
@@ -440,7 +440,7 @@ export class ErrorHandler {
     };
 
     switch (error.type) {
-      case 'FATAL':
+      case 'UNKNOWN_ERROR':
         this.logger.fatal('Fatal error occurred', error, logData, error.requestId);
         break;
       case 'PERMISSION_ERROR':

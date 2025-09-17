@@ -256,7 +256,7 @@ export class Logger {
 
     if (this.config.structured) {
       // Structured output for development
-      const logData = {
+      const logData: any = {
         timestamp: entry.timestamp,
         level: levelName,
         context: entry.context,
@@ -526,13 +526,13 @@ export function Logged(context?: string, level: LogLevel = LogLevel.INFO) {
       const methodName = `${target.constructor.name}.${propertyName}`;
 
       logger.startPerformance(methodName);
-      logger.log(level, `Method started: ${methodName}`, { args }, undefined, requestId);
+      (logger as any).log(level, `Method started: ${methodName}`, { args }, undefined, requestId);
 
       try {
         const result = await method.apply(this, args);
         const duration = logger.endPerformance(methodName, `Method completed: ${methodName}`);
 
-        logger.log(level, `Method success: ${methodName}`, {
+        (logger as any).log(level, `Method success: ${methodName}`, {
           args,
           duration: `${duration.toFixed(2)}ms`,
           success: true

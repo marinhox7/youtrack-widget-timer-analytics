@@ -7,8 +7,8 @@
       "Bash(youtrack-app upload:*)",
       "Bash(youtrack-app validate:*)",
       "Bash(npm run pack:*)",
-      "Bash(set YOUTRACK_TOKEN=perm-cGF1bG8uY2FybW8=.NTQtNzk=.9vQdTeI3jHcs7bpsqrG8DwE6veGoWV)",
-      "Bash(set YOUTRACK_HOST=braiphub.youtrack.cloud)",
+      "Bash(set YOUTRACK_TOKEN=your-youtrack-token-here)",
+      "Bash(set YOUTRACK_HOST=yourcompany.youtrack.cloud)",
       "Bash(start http://localhost:5173/widgets/timer-dashboard/simple.html)",
       "Bash(npm run upload:*)",
       "Bash(start http://localhost:5174/widgets/timer-dashboard/index.html)",
@@ -30,7 +30,11 @@
       "Bash(npx youtrack-app:*)",
       "Bash(zip:*)",
       "Bash(tar:*)",
-      "Bash(set YOUTRACK_TOKEN=perm-cGF1bG8uY2FybW8=.NTQtODQ=.duiywxlZPzmm5ZV5JHHuNQTuBK0hm3)"
+      "Bash(npx tsc:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(git log:*)",
+      "Bash(dir:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

@@ -450,38 +450,38 @@
 /* Active Issues Section */
 .active-issues-section {
   margin: 16px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
+  background-color: transparent;
+  border-radius: 0;
+  border: none;
   overflow: hidden;
 }
 
 .active-issues-section h3 {
-  margin: 0;
-  padding: 16px;
-  background-color: #e9ecef;
-  border-bottom: 1px solid #dee2e6;
+  margin: 0 0 16px 0;
+  padding: 0 0 8px 0;
+  background-color: transparent;
+  border-bottom: 1px solid #495057;
   font-size: 16px;
   font-weight: 600;
-  color: #212529;
+  color: #ffffff;
 }
 
 .active-issues-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 12px;
-  padding: 16px;
+  padding: 0;
   max-height: 400px;
   overflow-y: auto;
 }
 
 .active-issue-card {
-  background-color: #ffffff;
-  border: 1px solid #dee2e6;
+  background-color: #2d3748;
+  border: 1px solid #4a5568;
   border-radius: 6px;
   padding: 12px;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .active-issue-card:hover {
@@ -499,14 +499,14 @@
 
 .issue-id {
   font-weight: 600;
-  color: #007acc;
+  color: #ffffff;
   font-size: 14px;
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
 }
 
 .issue-project {
-  background-color: #e9ecef;
-  color: #495057;
+  background-color: #4a5568;
+  color: #e2e8f0;
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -518,7 +518,7 @@
 .issue-title {
   font-size: 13px;
   font-weight: 500;
-  color: #212529;
+  color: #ffffff;
   margin-bottom: 8px;
   line-height: 1.4;
   display: -webkit-box;
@@ -536,12 +536,12 @@
 }
 
 .timer-duration {
-  color: #28a745;
+  color: #20c997;
   font-weight: 500;
 }
 
 .timer-user {
-  color: #6c757d;
+  color: #cbd5e0;
 }
 
 .issue-status {
@@ -555,37 +555,42 @@
   font-size: 11px;
   font-weight: 500;
   text-transform: capitalize;
-  background-color: #f8f9fa;
-  color: #495057;
-  border: 1px solid #dee2e6;
+  background-color: #6c757d;
+  color: #ffffff;
+  border: 1px solid #495057;
 }
 
 .status-badge.open,
+.status-badge.aberto,
 .status-badge.in-progress {
-  background-color: #d4edda;
-  color: #155724;
-  border-color: #c3e6cb;
+  background-color: #28a745;
+  color: #ffffff;
+  border-color: #1e7e34;
 }
 
 .status-badge.resolved,
-.status-badge.closed {
-  background-color: #d1ecf1;
-  color: #0c5460;
-  border-color: #bee5eb;
+.status-badge.resolvido,
+.status-badge.closed,
+.status-badge.fechado {
+  background-color: #17a2b8;
+  color: #ffffff;
+  border-color: #138496;
 }
 
 .status-badge.blocked,
-.status-badge.critical {
-  background-color: #f8d7da;
-  color: #721c24;
-  border-color: #f1b0b7;
+.status-badge.bloqueado,
+.status-badge.critical,
+.status-badge.critico {
+  background-color: #dc3545;
+  color: #ffffff;
+  border-color: #c82333;
 }
 
 .no-active-issues {
   grid-column: 1 / -1;
   text-align: center;
   padding: 40px 20px;
-  color: #6c757d;
+  color: #e9ecef;
 }
 
 .empty-icon {
@@ -596,14 +601,15 @@
 .no-active-issues p {
   margin: 0;
   font-size: 14px;
-  color: #6c757d;
+  color: #e9ecef;
 }
 
 .show-more {
-  padding: 12px 16px;
+  padding: 12px 0;
   border-top: 1px solid #dee2e6;
-  background-color: #e9ecef;
+  background-color: transparent;
   text-align: center;
+  margin-top: 16px;
 }
 
 .show-more-btn {
@@ -618,7 +624,7 @@
 }
 
 .show-more-btn:hover {
-  background-color: #e9ecef;
+  background-color: #495057;
 }
 
 /* Dark mode support for active issues */
@@ -659,6 +665,7 @@
   background-color: #4a5568;
   border-color: #2d3748;
 }
+
 
 @keyframes spin {
   0% { transform: rotate(0deg); }

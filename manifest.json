@@ -1,9 +1,8 @@
 {
-  "$schema": "https://json.schemastore.org/youtrack-app.json",
   "name": "youtrack-timer-analytics-suite",
   "title": "YouTrack Timer Analytics Suite",
   "description": "Suite completa de analytics e monitoramento de timers para equipes e projetos",
-  "version": "2.0.0",
+  "version": "2.1.9",
   "icon": "icon.svg",
   "vendor": {
     "name": "Braip Development Team",
@@ -79,22 +78,6 @@
       }
     },
     {
-      "key": "timer-dashboard-simple",
-      "name": "Timer Dashboard Simples",
-      "description": "Versão compacta do dashboard para espaços menores",
-      "extensionPoint": "DASHBOARD_WIDGET",
-      "indexPath": "widgets/timer-dashboard/simple/index.html",
-      "permissions": [
-        "READ_ISSUE",
-        "READ_PROJECT",
-        "PRIVATE_READ_ISSUE"
-      ],
-      "defaultDimensions": {
-        "width": "4fr",
-        "height": "3fr"
-      }
-    },
-    {
       "key": "user-timer-compact",
       "name": "Meus Timers (Compacto)",
       "description": "Versão compacta do widget pessoal",
@@ -109,32 +92,6 @@
         "width": "4fr",
         "height": "3fr"
       }
-    }
-  ],
-  "httpHandlers": [
-    {
-      "path": "/api/timers",
-      "handler": "backend.js"
-    },
-    {
-      "path": "/api/stats",
-      "handler": "backend.js"
-    },
-    {
-      "path": "/api/health",
-      "handler": "backend.js"
-    },
-    {
-      "path": "/api/cache/clear",
-      "handler": "backend.js"
-    },
-    {
-      "path": "/api/config",
-      "handler": "backend.js"
-    },
-    {
-      "path": "/api/debug",
-      "handler": "backend.js"
     }
   ]
 }

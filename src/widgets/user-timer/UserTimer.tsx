@@ -9,12 +9,14 @@ import { TimerEntry, UserTimerStats } from '../../types';
 import { Logger } from '../../services/logger';
 import './UserTimer.css';
 
-interface UserTimerProps {
+export interface UserTimerProps {
   host?: any;
   username?: string;
   refreshInterval?: number;
   showQuickActions?: boolean;
   compactMode?: boolean;
+  compact?: boolean;
+  showDetails?: boolean;
 }
 
 interface UserTimerData {

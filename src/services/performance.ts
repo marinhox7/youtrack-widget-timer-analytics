@@ -133,7 +133,7 @@ export class PerformanceMonitor {
     if (!threshold) return;
 
     if (metric.value >= threshold.critical) {
-      this.logger.error('Critical performance threshold exceeded', {
+      this.logger.error('Critical performance threshold exceeded', null, {
         metric: metric.name,
         value: metric.value,
         threshold: threshold.critical

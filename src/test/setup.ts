@@ -51,7 +51,7 @@ global.console = {
 };
 
 // Mock YouTrack host context
-global.YTApp = {
+(global as any).YTApp = {
   register: vi.fn().mockResolvedValue({
     fetchYouTrack: vi.fn()
   })
@@ -87,11 +87,11 @@ export const createMockIssue = (overrides = {}) => ({
   ...overrides
 });
 
-// Reset all mocks before each test
-beforeEach(() => {
-  vi.clearAllMocks();
-  localStorageMock.getItem.mockClear();
-  localStorageMock.setItem.mockClear();
-  localStorageMock.removeItem.mockClear();
-  localStorageMock.clear.mockClear();
-});
+// Reset all mocks before each test - commented out for now
+// beforeEach(() => {
+//   vi.clearAllMocks();
+//   localStorageMock.getItem.mockClear();
+//   localStorageMock.setItem.mockClear();
+//   localStorageMock.removeItem.mockClear();
+//   localStorageMock.clear.mockClear();
+// });

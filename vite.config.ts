@@ -26,11 +26,7 @@ export default defineConfig({
         {
           src: 'backend.js',
           dest: '.'
-        }
-      ]
-    }),
-viteStaticCopy({
-      targets: [
+        },
         // Copy widget HTML files
         {
           src: 'widgets/timer-dashboard/index.html',
@@ -53,23 +49,10 @@ viteStaticCopy({
           dest: 'widgets/project-dashboard/'
         },
         {
-          src: 'widgets/timer-dashboard/simple/index.html',
-          dest: 'widgets/timer-dashboard/simple/'
-        },
-        {
           src: 'widgets/user-timer/compact/index.html',
           dest: 'widgets/user-timer/compact/'
-        },
-        {
-          src: 'widgets/timer-dashboard/icon.svg',
-          dest: 'widgets/timer-dashboard/'
-        },
-        {
-          src: 'widgets/timer-dashboard/styles.css',
-          dest: 'widgets/timer-dashboard/'
         }
-      ],
-      structured: false
+      ]
     })
   ],
   root: './src',
@@ -87,7 +70,6 @@ rollupOptions: {
         'analytics-main': resolve('./src/widgets/timer-analytics/index.tsx'),
         'user-timer-main': resolve('./src/widgets/user-timer/index.tsx'),
         'project-dashboard-main': resolve('./src/widgets/project-dashboard/index.tsx'),
-        'simple-dashboard-main': resolve('./src/widgets/timer-dashboard/simple/index.tsx'),
         'user-timer-compact-main': resolve('./src/widgets/user-timer/compact/index.tsx')
       },
       output: {

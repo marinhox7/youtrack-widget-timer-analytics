@@ -1,17 +1,13 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {
-  YouTrackAPI,
-  TimerEntry,
-  TimerStats,
-  processTimerData,
-  calculateStats,
-  formatDuration
-} from './api';
+import { YouTrackAPI, processTimerData, calculateStats, formatDuration } from '../../services/api';
+import { TimerEntry, TimerStats } from '../../types';
 import './styles.css';
 
-interface TimerDashboardProps {
+export interface TimerDashboardProps {
   host?: any;
   refreshInterval?: number;
+  compact?: boolean;
+  showProjectBreakdown?: boolean;
 }
 
 const TimerDashboard: React.FC<TimerDashboardProps> = ({
@@ -19,11 +15,24 @@ const TimerDashboard: React.FC<TimerDashboardProps> = ({
   refreshInterval = 30000 // 30 seconds
 }) => {
   const [timers, setTimers] = useState<TimerEntry[]>([]);
-  const [stats, setStats] = useState<TimerStats>({ totalUsers: 0, criticalTimers: 0, totalTimeMs: 0 });
+  const [stats, setStats] = useState<TimerStats>({
+    totalUsers: 0,
+    totalTimers: 0,
+    criticalTimers: 0,
+    longTimers: 0,
+    attentionTimers: 0,
+    totalTimeMs: 0,
+    averageTimeMs: 0,
+    longestTimerMs: 0,
+    projectBreakdown: [],
+    userBreakdown: []
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [nextUpdateIn, setNextUpdateIn] = useState<number>(refreshInterval / 1000);
+  const [userPermissions, setUserPermissions] = useState<{ isAdmin: boolean; canManageTimers: boolean }>({ isAdmin: false, canManageTimers: false });
+  const [cancelingTimer, setCancelingTimer] = useState<string | null>(null);
 
   const api = new YouTrackAPI(host);
 
@@ -49,11 +58,78 @@ const TimerDashboard: React.FC<TimerDashboardProps> = ({
 
       // Clear timers on error
       setTimers([]);
-      setStats({ totalUsers: 0, criticalTimers: 0, totalTimeMs: 0 });
+      setStats({
+        totalUsers: 0,
+        totalTimers: 0,
+        criticalTimers: 0,
+        longTimers: 0,
+        attentionTimers: 0,
+        totalTimeMs: 0,
+        averageTimeMs: 0,
+        longestTimerMs: 0,
+        projectBreakdown: [],
+        userBreakdown: []
+      });
     } finally {
       setLoading(false);
     }
   }, [host]);
+
+  // Check user permissions only once on mount
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkPermissions = async () => {
+      console.log('[Timer Dashboard] Starting permission check...', { hasHost: !!host });
+      try {
+        const permissions = await api.checkUserPermissions();
+        if (isMounted) {
+          setUserPermissions(permissions);
+          console.log('[Timer Dashboard] User permissions checked successfully:', permissions);
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.warn('[Timer Dashboard] Failed to check user permissions:', error);
+          setUserPermissions({ isAdmin: false, canManageTimers: false });
+        }
+      }
+    };
+
+    // Check permissions only once when component mounts and has host
+    if (host) {
+      checkPermissions();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array - run only once
+
+  // Cancel timer function
+  const handleCancelTimer = useCallback(async (issueId: string, issueKey: string) => {
+    if (!userPermissions.canManageTimers) {
+      console.warn('[Timer Dashboard] User does not have permission to cancel timers');
+      return;
+    }
+
+    try {
+      setCancelingTimer(issueId);
+      console.log('[Timer Dashboard] Cancelling timer for', issueKey);
+
+      // Stop the timer via Timer field
+      await api.stopTimer(issueId);
+
+      // Refresh data to show changes
+      await fetchTimers();
+
+      console.log('[Timer Dashboard] Timer cancelled successfully', { issueId, issueKey });
+    } catch (error) {
+      console.error('[Timer Dashboard] Failed to cancel timer', { issueId, issueKey, error });
+      setError(`Falha ao cancelar timer para ${issueKey}`);
+    } finally {
+      setCancelingTimer(null);
+    }
+  }, [api, userPermissions.canManageTimers, fetchTimers]);
 
   // Auto refresh functionality
   useEffect(() => {
@@ -189,12 +265,12 @@ const TimerDashboard: React.FC<TimerDashboardProps> = ({
               <span className="user-icon">👤</span>
               <span className="username">{username}</span>
               <span className="timer-count-small">
-                ({userTimers.length} timer{userTimers.length > 1 ? 's' : ''})
+                ({(userTimers as TimerEntry[]).length} timer{(userTimers as TimerEntry[]).length > 1 ? 's' : ''})
               </span>
             </div>
 
             {/* User's Timers */}
-            {userTimers.map((timer) => (
+            {(userTimers as TimerEntry[]).map((timer) => (
               <div
                 key={`${timer.username}-${timer.issueId}`}
                 className="timer-entry"
@@ -217,8 +293,20 @@ const TimerDashboard: React.FC<TimerDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="timer-duration" style={{ color: getStatusColor(timer.status) }}>
-                  {formatDuration(timer.elapsedMs)}
+                <div className="timer-actions">
+                  <div className="timer-duration" style={{ color: getStatusColor(timer.status) }}>
+                    {formatDuration(timer.elapsedMs)}
+                  </div>
+                  {userPermissions.canManageTimers && (
+                    <button
+                      className="cancel-timer-btn"
+                      onClick={() => handleCancelTimer(timer.issueId, timer.issueKey)}
+                      disabled={cancelingTimer === timer.issueId}
+                      title="Cancelar timer do usuário (Admin)"
+                    >
+                      {cancelingTimer === timer.issueId ? '⏳ Cancelando...' : '🛑 Cancelar'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

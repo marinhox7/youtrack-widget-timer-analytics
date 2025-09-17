@@ -96,7 +96,7 @@ export function useOptimizedData<T>(
       if (finalCacheKey) {
         const cachedData = await cache.get(finalCacheKey);
         if (cachedData && !checkStaleStatus()) {
-          setData(cachedData);
+          setData(cachedData as T);
           setIsStale(false);
           if (!isBackground) setLoading(false);
           monitor.recordMetric({

@@ -36,3 +36,5 @@ dist-ssr
 
 # Generated widget packages
 *.zip
+*.tar.gz
+*.tar
