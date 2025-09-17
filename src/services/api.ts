@@ -850,6 +850,114 @@ export class YouTrackAPI {
       throw error;
     }
   }
+
+  /**
+   * Cancel active timer for a specific issue
+   * Updates Timer Youtrack field to "Cancel Timer" - workflow will handle the rest
+   */
+  async cancelTimer(issueId: string): Promise<void> {
+    const requestId = RequestIdGenerator.generate();
+
+    try {
+      this.logger.info('Cancelling timer for issue', { issueId, requestId });
+
+      await this.makeRequest(
+        `issues/${issueId}`,
+        {
+          method: 'POST',
+          body: {
+            customFields: [
+              {
+                name: 'Timer Youtrack',
+                value: { name: 'Cancel Timer' }
+              }
+            ]
+          }
+        },
+        requestId
+      );
+
+      this.logger.info('Timer cancelled successfully - workflow will process', {
+        issueId,
+        action: 'Cancel Timer',
+        requestId
+      });
+
+      // Invalidate cache for this issue to force refresh
+      await this.invalidateCache(`issue_${issueId}`);
+      await this.invalidateCache('issues_with_timers');
+
+    } catch (error: any) {
+      this.logger.error('Failed to cancel timer', error as Error, {
+        issueId,
+        errorCode: error.code,
+        requestId
+      });
+
+      // Enhanced error handling for common issues
+      if (error.code === 'PERMISSION_DENIED') {
+        throw createError.permission(
+          'Insufficient permissions to cancel timer. System-admin access required.',
+          'CANCEL_TIMER_PERMISSION_DENIED',
+          { issueId },
+          requestId
+        );
+      }
+
+      if (error.code === 'NOT_FOUND') {
+        throw createError.api(
+          'Issue not found or Timer Youtrack field not available',
+          'ISSUE_OR_FIELD_NOT_FOUND',
+          { issueId },
+          requestId
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Update issue with custom fields
+   */
+  async updateIssue(issueId: string, customFields: Record<string, any>): Promise<void> {
+    const requestId = RequestIdGenerator.generate();
+
+    try {
+      const fieldsArray = Object.entries(customFields).map(([name, value]) => ({
+        name,
+        value: typeof value === 'object' ? value : { name: value }
+      }));
+
+      await this.makeRequest(
+        `issues/${issueId}`,
+        {
+          method: 'POST',
+          body: {
+            customFields: fieldsArray
+          }
+        },
+        requestId
+      );
+
+      this.logger.info('Issue updated successfully', {
+        issueId,
+        fieldsUpdated: Object.keys(customFields),
+        requestId
+      });
+
+      // Invalidate relevant caches
+      await this.invalidateCache(`issue_${issueId}`);
+
+    } catch (error) {
+      this.logger.error('Failed to update issue', error as Error, {
+        issueId,
+        fields: Object.keys(customFields),
+        requestId
+      });
+      throw error;
+    }
+  }
 }
 
 /**

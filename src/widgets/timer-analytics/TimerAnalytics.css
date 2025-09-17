@@ -466,6 +466,35 @@
   color: #ffffff;
 }
 
+/* Admin Notice */
+.admin-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background-color: rgba(0, 122, 204, 0.1);
+  border: 1px solid rgba(0, 122, 204, 0.2);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.admin-badge {
+  background-color: #007acc;
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-text {
+  color: #007acc;
+  font-weight: 500;
+}
+
 .active-issues-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -482,12 +511,22 @@
   padding: 12px;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 12px;
 }
 
 .active-issue-card:hover {
   border-color: #007acc;
   box-shadow: 0 2px 8px rgba(0, 122, 204, 0.15);
   transform: translateY(-1px);
+}
+
+.issue-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .issue-header {
@@ -584,6 +623,88 @@
   background-color: #dc3545;
   color: #ffffff;
   border-color: #c82333;
+}
+
+/* Timer status badges */
+.status-badge.ok {
+  background-color: #28a745;
+  color: #ffffff;
+  border-color: #1e7e34;
+}
+
+.status-badge.attention {
+  background-color: #ffc107;
+  color: #212529;
+  border-color: #d39e00;
+}
+
+.status-badge.long {
+  background-color: #fd7e14;
+  color: #ffffff;
+  border-color: #e55a00;
+}
+
+.status-badge.critical {
+  background-color: #dc3545;
+  color: #ffffff;
+  border-color: #c82333;
+}
+
+.status-badge.overtime {
+  background-color: #6f42c1;
+  color: #ffffff;
+  border-color: #59359a;
+}
+
+/* Timer Actions */
+.timer-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-width: 80px;
+}
+
+.cancel-timer-button {
+  background-color: #dc3545;
+  color: #ffffff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 70px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.cancel-timer-button:hover:not(:disabled) {
+  background-color: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+}
+
+.cancel-timer-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.cancel-timer-button .loading-spinner {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .no-active-issues {

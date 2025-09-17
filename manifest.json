@@ -37,7 +37,8 @@
         "READ_ISSUE",
         "READ_PROJECT",
         "PRIVATE_READ_ISSUE",
-        "READ_USER"
+        "READ_USER",
+        "UPDATE_ISSUE"
       ],
       "defaultDimensions": {
         "width": "12fr",

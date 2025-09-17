@@ -48,6 +48,8 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
   const [selectedMetric, setSelectedMetric] = useState<'count' | 'duration' | 'average'>('count');
   const [selectedTimeRange, setSelectedTimeRange] = useState(timeRange);
   const [selectedProject, setSelectedProject] = useState<string>('all');
+  const [userPermissions, setUserPermissions] = useState({ isAdmin: false, canManageTimers: false });
+  const [cancelingTimer, setCancelingTimer] = useState<string | null>(null);
 
   const logger = Logger.getLogger('TimerAnalytics');
   const api = new YouTrackAPI(host);
@@ -77,6 +79,58 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
     }
   }, [api, selectedProject, selectedTimeRange]);
 
+  // Check user permissions
+  useEffect(() => {
+    const checkPermissions = async () => {
+      try {
+        const permissions = await api.checkUserPermissions();
+        setUserPermissions(permissions);
+        logger.info('User permissions checked', permissions);
+      } catch (error) {
+        logger.warn('Failed to check permissions, assuming no admin access', error as Error);
+        setUserPermissions({ isAdmin: false, canManageTimers: false });
+      }
+    };
+
+    if (host) {
+      checkPermissions();
+    }
+  }, [api, host, logger]);
+
+  // Cancel timer function
+  const handleCancelTimer = useCallback(async (issueId: string, issueKey: string, username: string) => {
+    if (!userPermissions.canManageTimers) {
+      logger.warn('User attempted to cancel timer without permissions', { issueId, issueKey, username });
+      setError('Apenas usuários system-admin podem cancelar timers');
+      return;
+    }
+
+    try {
+      setCancelingTimer(issueId);
+      logger.info('Cancelling timer', { issueId, issueKey, username });
+
+      await api.cancelTimer(issueId);
+
+      // Refresh data to reflect changes
+      await fetchAnalyticsData();
+
+      logger.info('Timer cancelled successfully', { issueId, issueKey, username });
+      setError(null);
+
+    } catch (error: any) {
+      logger.error('Failed to cancel timer', error as Error, { issueId, issueKey, username });
+
+      if (error.code === 'CANCEL_TIMER_PERMISSION_DENIED') {
+        setError('Permissões insuficientes para cancelar timer. Acesso system-admin necessário.');
+      } else if (error.code === 'ISSUE_OR_FIELD_NOT_FOUND') {
+        setError(`Issue ${issueKey} não encontrado ou campo Timer Youtrack não disponível`);
+      } else {
+        setError(`Falha ao cancelar timer para ${issueKey}: ${error.message}`);
+      }
+    } finally {
+      setCancelingTimer(null);
+    }
+  }, [api, userPermissions.canManageTimers, fetchAnalyticsData, logger]);
 
   // Auto refresh
   useEffect(() => {
@@ -354,24 +408,59 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
       {/* Active Issues List */}
       <div className="active-issues-section">
         <h3>🔥 Issues com Timers Ativos</h3>
+        {userPermissions.canManageTimers && (
+          <div className="admin-notice">
+            <span className="admin-badge">🔧 System Admin</span>
+            <span className="admin-text">Você pode cancelar timers de outros usuários</span>
+          </div>
+        )}
         <div className="active-issues-grid">
           {data.timers.length > 0 ? (
             data.timers.slice(0, 10).map((timer, index) => (
               <div key={`${timer.issueId}-${index}`} className="active-issue-card">
-                <div className="issue-header">
-                  <span className="issue-id">{timer.issueKey}</span>
-                  <span className="issue-project">{timer.projectShortName}</span>
+                <div className="issue-content">
+                  <div className="issue-header">
+                    <span className="issue-id">{timer.issueKey}</span>
+                    <span className="issue-project">{timer.projectShortName}</span>
+                  </div>
+                  <div className="issue-title">{timer.issueSummary}</div>
+                  <div className="issue-meta">
+                    <span className="timer-duration">⏱️ {formatDuration(timer.elapsedMs, { precision: 'medium' })}</span>
+                    <span className="timer-user">👤 {timer.username}</span>
+                  </div>
+                  <div className="issue-status">
+                    <span className={`status-badge ${timer.status}`}>
+                      {timer.status === 'ok' && '✅ OK'}
+                      {timer.status === 'attention' && '⚠️ Atenção'}
+                      {timer.status === 'long' && '🟡 Longo'}
+                      {timer.status === 'critical' && '🟠 Crítico'}
+                      {timer.status === 'overtime' && '🔴 Overtime'}
+                    </span>
+                  </div>
                 </div>
-                <div className="issue-title">{timer.issueSummary}</div>
-                <div className="issue-meta">
-                  <span className="timer-duration">⏱️ {formatDuration(timer.elapsedMs, { precision: 'medium' })}</span>
-                  <span className="timer-user">👤 {timer.username}</span>
-                </div>
-                <div className="issue-status">
-                  <span className={`status-badge ${timer.state?.toLowerCase().replace(' ', '-').replace('/', '-') || 'open'}`}>
-                    {timer.state && timer.state !== 'N/A' ? timer.state : 'Aberto'}
-                  </span>
-                </div>
+
+                {userPermissions.canManageTimers && (
+                  <div className="timer-actions">
+                    <button
+                      className="cancel-timer-button"
+                      onClick={() => handleCancelTimer(timer.issueId, timer.issueKey, timer.username)}
+                      disabled={cancelingTimer === timer.issueId}
+                      title={`Cancelar Timer para ${timer.issueKey} (usuário: ${timer.username})`}
+                    >
+                      {cancelingTimer === timer.issueId ? (
+                        <>
+                          <span className="loading-spinner">⟳</span>
+                          <span>Cancelando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🛑</span>
+                          <span>Cancelar</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           ) : (
