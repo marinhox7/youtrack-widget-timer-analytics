@@ -239,7 +239,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
 
   if (loading && !data) {
     return (
-      <div className="project-dashboard">
+      <div className="widget-container project-dashboard">
         <div className="loading-container">
           <div className="loader"></div>
           <span>Carregando dashboard do projeto...</span>
@@ -250,7 +250,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
 
   if (error) {
     return (
-      <div className="project-dashboard">
+      <div className="widget-container project-dashboard">
         <div className="error-container">
           <span className="error-icon">⚠️</span>
           <span>{error}</span>
@@ -274,7 +274,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   }
 
   return (
-    <div className="project-dashboard">
+    <div className="widget-container project-dashboard">
       {/* Header */}
       <div className="dashboard-header">
         <div className="project-info">

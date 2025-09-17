@@ -14,7 +14,7 @@
     "pack": "rm -rf timer-dashboard-widget.zip && cd dist/ && bestzip ../timer-dashboard-widget.zip *",
     "upload": "youtrack-app upload dist",
     "validate": "youtrack-app validate dist",
-    "copy-assets": "cp -r dist/assets dist/widgets/timer-dashboard/ && cp -r dist/assets dist/widgets/timer-dashboard/project-settings/ && cp -r dist/assets dist/widgets/timer-analytics/ && cp -r dist/assets dist/widgets/user-timer/ && cp -r dist/assets dist/widgets/project-dashboard/ && cp -r dist/assets dist/widgets/timer-dashboard/simple/ && cp -r dist/assets dist/widgets/user-timer/compact/"
+    "copy-assets": "cp -r dist/widgets/timer-dashboard/* dist/widgets/timer-dashboard/ && cp -r dist/widgets/timer-analytics/* dist/widgets/timer-analytics/ && cp -r dist/widgets/user-timer/* dist/widgets/user-timer/ && cp -r dist/widgets/project-dashboard/* dist/widgets/project-dashboard/"
   },
   "dependencies": {
     "@types/throttle-debounce": "^5.0.2",
@@ -39,6 +39,7 @@
     "jsdom": "^27.0.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.1",
+    "vite-plugin-css-injected-by-js": "^3.5.2",
     "vite-plugin-static-copy": "^2.2.0",
     "vitest": "^3.2.4"
   }

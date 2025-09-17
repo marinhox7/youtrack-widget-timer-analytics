@@ -126,7 +126,7 @@ const UserTimer: React.FC<UserTimerProps> = ({
 
   if (loading && !data) {
     return (
-      <div className={`user-timer ${compactMode ? 'compact' : ''}`}>
+      <div className={`widget-container user-timer ${compactMode ? 'compact' : ''}`}>
         <div className="loading-container">
           <div className="loader"></div>
           <span>Carregando dados do usuário...</span>
@@ -137,7 +137,7 @@ const UserTimer: React.FC<UserTimerProps> = ({
 
   if (error) {
     return (
-      <div className={`user-timer ${compactMode ? 'compact' : ''}`}>
+      <div className={`widget-container user-timer ${compactMode ? 'compact' : ''}`}>
         <div className="error-container">
           <span className="error-icon">⚠️</span>
           <span>{error}</span>
@@ -151,7 +151,7 @@ const UserTimer: React.FC<UserTimerProps> = ({
 
   if (!data) {
     return (
-      <div className={`user-timer ${compactMode ? 'compact' : ''}`}>
+      <div className={`widget-container user-timer ${compactMode ? 'compact' : ''}`}>
         <div className="empty-state">
           <span className="empty-icon">👤</span>
           <span>Nenhum dado encontrado</span>
@@ -161,7 +161,7 @@ const UserTimer: React.FC<UserTimerProps> = ({
   }
 
   return (
-    <div className={`user-timer ${compactMode ? 'compact' : ''}`}>
+    <div className={`widget-container user-timer ${compactMode ? 'compact' : ''}`}>
       {/* Header */}
       <div className="user-timer-header">
         <div className="user-info">

@@ -1,16 +1,13 @@
-import {resolve} from 'node:path';
-import {defineConfig} from 'vite';
-import {viteStaticCopy} from 'vite-plugin-static-copy';
+import { resolve } from 'node:path';
+import { defineConfig } from 'vite';
+import { viteStaticCopy } from 'vite-plugin-static-copy';
 import react from '@vitejs/plugin-react';
-
-/*
-  Vite configuration for YouTrack Timer Dashboard Widget
-  See https://vitejs.dev/config/
-*/
+import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
 export default defineConfig({
   plugins: [
     react(),
+    cssInjectedByJsPlugin(),
     viteStaticCopy({
       targets: [
         // Copy manifest and icon from root
@@ -56,14 +53,16 @@ export default defineConfig({
     })
   ],
   root: './src',
-  base: '',
-  publicDir: false, // We handle copying manually
+  base: './', // relative base for YouTrack
+  publicDir: false,
   build: {
     outDir: '../dist',
     emptyOutDir: true,
     target: ['es2022'],
-assetsDir: 'assets',
-rollupOptions: {
+    assetsDir: 'assets',
+    cssCodeSplit: false,
+    sourcemap: true,
+    rollupOptions: {
       input: {
         main: resolve('./src/widgets/timer-dashboard/index.tsx'),
         'project-settings-main': resolve('./src/widgets/timer-dashboard/project-settings/index.tsx'),
@@ -73,10 +72,48 @@ rollupOptions: {
         'user-timer-compact-main': resolve('./src/widgets/user-timer/compact/index.tsx')
       },
       output: {
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
+        entryFileNames: (chunkInfo) => {
+          const facadeModuleId = (chunkInfo as any).facadeModuleId as string | undefined;
+          if (facadeModuleId?.includes('timer-analytics')) {
+            return 'widgets/timer-analytics/[name].js';
+          }
+          if (facadeModuleId?.includes('user-timer/compact')) {
+            return 'widgets/user-timer/compact/[name].js';
+          }
+          if (facadeModuleId?.includes('user-timer')) {
+            return 'widgets/user-timer/[name].js';
+          }
+          if (facadeModuleId?.includes('project-dashboard')) {
+            return 'widgets/project-dashboard/[name].js';
+          }
+          if (facadeModuleId?.includes('project-settings')) {
+            return 'widgets/timer-dashboard/project-settings/[name].js';
+          }
+          return 'widgets/timer-dashboard/[name].js';
+        },
+        chunkFileNames: () => {
+          return 'widgets/timer-dashboard/[name]-[hash].js';
+        },
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name?.endsWith('.css')) {
+            const name = assetInfo.name || '';
+            if (name.includes('analytics')) {
+              return 'widgets/timer-analytics/[name]-[hash].[ext]';
+            }
+            if (name.includes('UserTimer')) {
+              return 'widgets/user-timer/[name]-[hash].[ext]';
+            }
+            if (name.includes('ProjectDashboard')) {
+              return 'widgets/project-dashboard/[name]-[hash].[ext]';
+            }
+            return 'widgets/timer-dashboard/[name]-[hash].[ext]';
+          }
+          return 'assets/[name]-[hash].[ext]';
+        }
       }
     }
+  },
+  define: {
+    'process.env.NODE_ENV': '"production"'
   }
 });

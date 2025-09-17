@@ -523,3 +523,20 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+/* CSS Isolation for YouTrack widget */
+.widget-container {
+  all: initial;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+.widget-container * {
+  all: unset;
+  display: revert;
+  box-sizing: border-box;
+}
+
+.widget-container {
+  background-color: var(--ring-content-background-color, #ffffff);
+  color: var(--ring-text-color, #000000);
+  border-color: var(--ring-borders-color, #ddd);
+}

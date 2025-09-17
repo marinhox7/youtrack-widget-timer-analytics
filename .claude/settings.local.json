@@ -10,7 +10,8 @@
       "Bash(echo $YOUTRACK_HOST)",
       "Bash(export YOUTRACK_HOST=braiphub.youtrack.cloud)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

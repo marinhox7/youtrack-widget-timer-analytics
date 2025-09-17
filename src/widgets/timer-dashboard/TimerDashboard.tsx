@@ -200,7 +200,7 @@ const TimerDashboard: React.FC<TimerDashboardProps> = ({
 
   if (loading && timers.length === 0) {
     return (
-      <div className="timer-dashboard">
+      <div className="widget-container timer-dashboard">
         <div className="loading-container">
           <div className="loader"></div>
           <span>Carregando timers ativos...</span>
@@ -210,7 +210,7 @@ const TimerDashboard: React.FC<TimerDashboardProps> = ({
   }
 
   return (
-    <div className="timer-dashboard">
+    <div className="widget-container timer-dashboard">
       {/* Header */}
       <div className="dashboard-header">
         <div className="header-title">

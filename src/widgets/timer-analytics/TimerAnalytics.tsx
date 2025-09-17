@@ -365,7 +365,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
 
   if (loading && !data) {
     return (
-      <div className="timer-analytics">
+      <div className="widget-container timer-analytics">
         <div className="loading-container">
           <div className="loader"></div>
           <span>Carregando analytics...</span>
@@ -376,7 +376,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
 
   if (error) {
     return (
-      <div className="timer-analytics">
+      <div className="widget-container timer-analytics">
         <div className="error-container">
           <span className="error-icon">⚠️</span>
           <span>{error}</span>
@@ -390,7 +390,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
 
   if (!data) {
     return (
-      <div className="timer-analytics">
+      <div className="widget-container timer-analytics">
         <div className="empty-state">
           <span className="empty-icon">📊</span>
           <span>Nenhum dado de analytics disponível</span>
@@ -400,7 +400,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
   }
 
   return (
-    <div className="timer-analytics">
+    <div className="widget-container timer-analytics">
       {/* Header */}
       <div className="analytics-header">
         <h2>📊 Timer Analytics</h2>
