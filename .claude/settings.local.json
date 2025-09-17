@@ -9,7 +9,8 @@
       "Bash(youtrack-app:*)",
       "Bash(echo $YOUTRACK_HOST)",
       "Bash(export YOUTRACK_HOST=braiphub.youtrack.cloud)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
