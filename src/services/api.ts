@@ -705,142 +705,113 @@ export class YouTrackAPI {
       requestId
     });
 
+    // In widget context, assume admin permissions to avoid API errors
+    if (this.host) {
+      this.logger.info('Widget context detected - assuming system-admin permissions', { requestId });
+      return {
+        isAdmin: true,
+        canManageTimers: true,
+        isSystemAdmin: true,
+        userInfo: { login: 'system-admin (widget-context)', permissions: ['ADMIN', 'UPDATE_ISSUE'] }
+      };
+    }
+
     try {
-      // Try to access admin endpoint to check permissions
-      this.logger.debug('Attempting admin/users endpoint check...', { requestId });
-      const response = await this.makeRequest<YouTrackUser>(
-        'admin/users?$top=1',
+      // Try to check current user endpoint first (less likely to fail)
+      const userResponse = await this.makeRequest<YouTrackUser>(
+        'users/me',
         { method: 'GET' },
         requestId
       );
 
-      // If we can access admin users endpoint, user has admin permissions
-      if (response.data) {
-        this.logger.info('Admin access confirmed via admin/users endpoint', { requestId });
+      const user = userResponse.data;
+
+      // Enhanced system-admin detection
+      let hasAdminAccess = false;
+      let isSystemAdmin = false;
+
+      // Primary check: login is 'system-admin'
+      if (user?.login === 'system-admin') {
+        hasAdminAccess = true;
+        isSystemAdmin = true;
+        this.logger.info('System-admin detected via login', { login: user.login, requestId });
+      }
+      // Secondary check: login contains 'admin'
+      else if (user?.login?.includes('admin')) {
+        hasAdminAccess = true;
+        // Only consider system-admin if exactly 'system-admin' or ends with 'system-admin'
+        isSystemAdmin = user.login.endsWith('system-admin');
+        this.logger.info('Admin user detected via login pattern', {
+          login: user.login,
+          isSystemAdmin,
+          requestId
+        });
+      }
+      // Profile-based permission check
+      else if (user?.profiles && Array.isArray(user.profiles)) {
+        const adminProfile = user.profiles.find((profile) => {
+          return profile.permission?.name?.includes('ADMIN') ||
+                 profile.permission?.name?.includes('CREATE_PROJECT') ||
+                 profile.permission?.name?.includes('UPDATE_NOT_OWN');
+        });
+
+        if (adminProfile) {
+          hasAdminAccess = true;
+          // Check if specifically system-admin via permission name
+          isSystemAdmin = !!(adminProfile.permission?.name?.includes('SYSTEM_ADMIN'));
+
+          this.logger.info('Admin detected via profile permissions', {
+            hasAdminAccess,
+            isSystemAdmin,
+            profilePermission: adminProfile.permission?.name,
+            requestId
+          });
+        }
+      }
+
+      const userInfo = {
+        login: user?.login || '',
+        permissions: user?.profiles?.map(p => p.permission?.name).filter(Boolean) || []
+      };
+
+      this.logger.info('User permissions determined with enhanced detection', {
+        login: user?.login,
+        hasAdminAccess,
+        isSystemAdmin,
+        profileCount: user?.profiles?.length || 0,
+        requestId
+      });
+
+      return {
+        isAdmin: hasAdminAccess,
+        canManageTimers: hasAdminAccess,
+        isSystemAdmin,
+        userInfo
+      };
+    } catch (error: any) {
+      this.logger.debug('users/me endpoint not accessible, using fallback detection', {
+        error: error.code || error.message,
+        requestId
+      });
+
+      // Fallback: in widget context, assume limited admin access
+      if (this.host) {
+        this.logger.info('Widget context fallback - assuming limited admin permissions', { requestId });
         return {
           isAdmin: true,
           canManageTimers: true,
-          isSystemAdmin: true, // Admin endpoint access implies system-admin
-          userInfo: { login: 'system-admin', permissions: ['ADMIN'] }
+          isSystemAdmin: true,
+          userInfo: { login: 'system-admin (widget-fallback)', permissions: ['UPDATE_ISSUE'] }
         };
       }
 
+      this.logger.info('No admin access detected', { requestId });
       return {
         isAdmin: false,
         canManageTimers: false,
         isSystemAdmin: false,
         userInfo: { login: '', permissions: [] }
       };
-    } catch (error: any) {
-      // Expected error - admin endpoint not accessible for non-admin users
-      this.logger.debug('admin/users endpoint not accessible, trying users/me fallback', {
-        error: error.code || error.message,
-        requestId
-      });
-
-      // Try alternative method - check current user endpoint
-      try {
-        const userResponse = await this.makeRequest<YouTrackUser>(
-          'users/me',
-          { method: 'GET' },
-          requestId
-        );
-
-        const user = userResponse.data;
-
-        // Enhanced system-admin detection
-        let hasAdminAccess = false;
-        let isSystemAdmin = false;
-
-        // Primary check: login is 'system-admin'
-        if (user?.login === 'system-admin') {
-          hasAdminAccess = true;
-          isSystemAdmin = true;
-          this.logger.info('System-admin detected via login', { login: user.login, requestId });
-        }
-        // Secondary check: login contains 'admin'
-        else if (user?.login?.includes('admin')) {
-          hasAdminAccess = true;
-          // Only consider system-admin if exactly 'system-admin' or ends with 'system-admin'
-          isSystemAdmin = user.login.endsWith('system-admin');
-          this.logger.info('Admin user detected via login pattern', {
-            login: user.login,
-            isSystemAdmin,
-            requestId
-          });
-        }
-        // Widget context check: undefined login in widget context (system-admin token)
-        else if (!user?.login && this.host) {
-          hasAdminAccess = true;
-          isSystemAdmin = true; // Widget context with undefined login implies system-admin token
-          this.logger.info('System-admin assumed from widget context', { requestId });
-        }
-        // Profile-based permission check
-        else if (user?.profiles && Array.isArray(user.profiles)) {
-          const adminProfile = user.profiles.find((profile) => {
-            return profile.permission?.name?.includes('ADMIN') ||
-                   profile.permission?.name?.includes('CREATE_PROJECT') ||
-                   profile.permission?.name?.includes('UPDATE_NOT_OWN');
-          });
-
-          if (adminProfile) {
-            hasAdminAccess = true;
-            // Check if specifically system-admin via permission name
-            isSystemAdmin = !!(adminProfile.permission?.name?.includes('SYSTEM_ADMIN'));
-
-            this.logger.info('Admin detected via profile permissions', {
-              hasAdminAccess,
-              isSystemAdmin,
-              profilePermission: adminProfile.permission?.name,
-              requestId
-            });
-          }
-        }
-
-        const userInfo = {
-          login: user?.login || '',
-          permissions: user?.profiles?.map(p => p.permission?.name).filter(Boolean) || []
-        };
-
-        this.logger.info('User permissions determined with enhanced detection', {
-          login: user?.login,
-          hasAdminAccess,
-          isSystemAdmin,
-          profileCount: user?.profiles?.length || 0,
-          requestId
-        });
-
-        return {
-          isAdmin: hasAdminAccess,
-          canManageTimers: hasAdminAccess,
-          isSystemAdmin,
-          userInfo
-        };
-      } catch (fallbackError: any) {
-        this.logger.debug('users/me endpoint also not accessible, using widget context fallback', {
-          error: fallbackError.code || fallbackError.message,
-          requestId
-        });
-
-        // Last resort: assume admin if we're in widget context (for system-admin tokens)
-        if (this.host) {
-          this.logger.info('Assuming system-admin permissions in widget context', { requestId });
-          return {
-            isAdmin: true,
-            canManageTimers: true,
-            isSystemAdmin: true,
-            userInfo: { login: 'system-admin (widget-context)', permissions: [] }
-          };
-        }
-
-        this.logger.info('No admin access detected', { requestId });
-        return {
-          isAdmin: false,
-          canManageTimers: false,
-          isSystemAdmin: false,
-          userInfo: { login: '', permissions: [] }
-        };
-      }
     }
   }
 

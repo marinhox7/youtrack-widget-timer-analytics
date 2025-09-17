@@ -366,9 +366,16 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
   if (loading && !data) {
     return (
       <div className="widget-container timer-analytics">
+        <div className="analytics-header">
+          <h2>📊 Timer Analytics</h2>
+          <div className="header-controls">
+            <span className="loading-text">Carregando...</span>
+          </div>
+        </div>
         <div className="loading-container">
           <div className="loader"></div>
-          <span>Carregando analytics...</span>
+          <span>Carregando dados de analytics...</span>
+          <small>Isso pode levar alguns segundos</small>
         </div>
       </div>
     );
@@ -377,12 +384,23 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
   if (error) {
     return (
       <div className="widget-container timer-analytics">
+        <div className="analytics-header">
+          <h2>📊 Timer Analytics</h2>
+          <div className="header-controls">
+            <button onClick={fetchAnalyticsData} className="refresh-button">
+              ↻ Tentar Novamente
+            </button>
+          </div>
+        </div>
         <div className="error-container">
           <span className="error-icon">⚠️</span>
-          <span>{error}</span>
-          <button onClick={fetchAnalyticsData} className="retry-button">
-            Tentar Novamente
-          </button>
+          <div className="error-content">
+            <h3>Erro ao Carregar Analytics</h3>
+            <p>{error}</p>
+            <button onClick={fetchAnalyticsData} className="retry-button">
+              🔄 Tentar Novamente
+            </button>
+          </div>
         </div>
       </div>
     );
