@@ -1,0 +1,50 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import TimerDashboard from '../TimerDashboard';
+
+// Declare YTApp type
+declare global {
+  interface Window {
+    YTApp: {
+      register(): Promise<any>;
+    };
+    host: any;
+  }
+}
+
+// Widget initialization function
+async function initializeWidget() {
+  console.log('[Simple Timer Dashboard Widget] Initializing...');
+
+  try {
+    // Register with YouTrack first
+    if (typeof window.YTApp !== 'undefined' && window.YTApp.register) {
+      const host = await window.YTApp.register();
+      console.log('[Simple Timer Dashboard Widget] Successfully registered with YouTrack', !!host);
+
+      // Now initialize React app
+      const container = document.getElementById('app');
+      if (container) {
+        const root = createRoot(container);
+        root.render(
+          <React.StrictMode>
+            <TimerDashboard host={host} compact={true} showProjectBreakdown={false} />
+          </React.StrictMode>
+        );
+      } else {
+        console.error('[Simple Timer Dashboard Widget] Could not find app container');
+      }
+    } else {
+      console.error('[Simple Timer Dashboard Widget] YTApp.register not available');
+    }
+  } catch (error) {
+    console.error('[Simple Timer Dashboard Widget] Failed to register with YouTrack:', error);
+  }
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeWidget);
+} else {
+  initializeWidget();
+}
