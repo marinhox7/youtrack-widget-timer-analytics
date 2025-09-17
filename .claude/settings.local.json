@@ -39,7 +39,8 @@
       "Bash(tasklist:*)",
       "Bash(wmic:*)",
       "Bash(taskkill:*)",
-      "Bash(tskill:*)"
+      "Bash(tskill:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
