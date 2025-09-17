@@ -691,11 +691,19 @@ export class YouTrackAPI {
   }
 
   /**
-   * Check if current user has admin permissions
+   * Check if current user has admin permissions with enhanced system-admin detection
    */
-  async checkUserPermissions(): Promise<{ isAdmin: boolean; canManageTimers: boolean }> {
+  async checkUserPermissions(): Promise<{
+    isAdmin: boolean;
+    canManageTimers: boolean;
+    isSystemAdmin: boolean;
+    userInfo: { login: string; permissions: string[] };
+  }> {
     const requestId = RequestIdGenerator.generate();
-    this.logger.debug('checkUserPermissions called', { hasHost: !!this.host, requestId });
+    this.logger.debug('checkUserPermissions called with enhanced system-admin detection', {
+      hasHost: !!this.host,
+      requestId
+    });
 
     try {
       // Try to access admin endpoint to check permissions
@@ -711,11 +719,18 @@ export class YouTrackAPI {
         this.logger.info('Admin access confirmed via admin/users endpoint', { requestId });
         return {
           isAdmin: true,
-          canManageTimers: true
+          canManageTimers: true,
+          isSystemAdmin: true, // Admin endpoint access implies system-admin
+          userInfo: { login: 'system-admin', permissions: ['ADMIN'] }
         };
       }
 
-      return { isAdmin: false, canManageTimers: false };
+      return {
+        isAdmin: false,
+        canManageTimers: false,
+        isSystemAdmin: false,
+        userInfo: { login: '', permissions: [] }
+      };
     } catch (error: any) {
       // Expected error - admin endpoint not accessible for non-admin users
       this.logger.debug('admin/users endpoint not accessible, trying users/me fallback', {
@@ -733,33 +748,73 @@ export class YouTrackAPI {
 
         const user = userResponse.data;
 
-        // Check if user has system-admin or admin permissions
-        // If login is undefined but we're in widget context, assume admin for system-admin token
+        // Enhanced system-admin detection
         let hasAdminAccess = false;
+        let isSystemAdmin = false;
 
-        if (user?.login === 'system-admin' || user?.login?.includes('admin')) {
+        // Primary check: login is 'system-admin'
+        if (user?.login === 'system-admin') {
           hasAdminAccess = true;
-        } else if (!user?.login && this.host) {
-          // Assume admin if login undefined in widget context (system-admin token)
+          isSystemAdmin = true;
+          this.logger.info('System-admin detected via login', { login: user.login, requestId });
+        }
+        // Secondary check: login contains 'admin'
+        else if (user?.login?.includes('admin')) {
           hasAdminAccess = true;
-        } else if (user?.profiles && Array.isArray(user.profiles)) {
-          hasAdminAccess = user.profiles.some((profile) => {
+          // Only consider system-admin if exactly 'system-admin' or ends with 'system-admin'
+          isSystemAdmin = user.login.endsWith('system-admin');
+          this.logger.info('Admin user detected via login pattern', {
+            login: user.login,
+            isSystemAdmin,
+            requestId
+          });
+        }
+        // Widget context check: undefined login in widget context (system-admin token)
+        else if (!user?.login && this.host) {
+          hasAdminAccess = true;
+          isSystemAdmin = true; // Widget context with undefined login implies system-admin token
+          this.logger.info('System-admin assumed from widget context', { requestId });
+        }
+        // Profile-based permission check
+        else if (user?.profiles && Array.isArray(user.profiles)) {
+          const adminProfile = user.profiles.find((profile) => {
             return profile.permission?.name?.includes('ADMIN') ||
                    profile.permission?.name?.includes('CREATE_PROJECT') ||
                    profile.permission?.name?.includes('UPDATE_NOT_OWN');
           });
+
+          if (adminProfile) {
+            hasAdminAccess = true;
+            // Check if specifically system-admin via permission name
+            isSystemAdmin = !!(adminProfile.permission?.name?.includes('SYSTEM_ADMIN'));
+
+            this.logger.info('Admin detected via profile permissions', {
+              hasAdminAccess,
+              isSystemAdmin,
+              profilePermission: adminProfile.permission?.name,
+              requestId
+            });
+          }
         }
 
-        this.logger.info('User permissions determined', {
+        const userInfo = {
+          login: user?.login || '',
+          permissions: user?.profiles?.map(p => p.permission?.name).filter(Boolean) || []
+        };
+
+        this.logger.info('User permissions determined with enhanced detection', {
           login: user?.login,
           hasAdminAccess,
+          isSystemAdmin,
           profileCount: user?.profiles?.length || 0,
           requestId
         });
 
         return {
           isAdmin: hasAdminAccess,
-          canManageTimers: hasAdminAccess
+          canManageTimers: hasAdminAccess,
+          isSystemAdmin,
+          userInfo
         };
       } catch (fallbackError: any) {
         this.logger.debug('users/me endpoint also not accessible, using widget context fallback', {
@@ -769,12 +824,22 @@ export class YouTrackAPI {
 
         // Last resort: assume admin if we're in widget context (for system-admin tokens)
         if (this.host) {
-          this.logger.info('Assuming admin permissions in widget context for system-admin token', { requestId });
-          return { isAdmin: true, canManageTimers: true };
+          this.logger.info('Assuming system-admin permissions in widget context', { requestId });
+          return {
+            isAdmin: true,
+            canManageTimers: true,
+            isSystemAdmin: true,
+            userInfo: { login: 'system-admin (widget-context)', permissions: [] }
+          };
         }
 
         this.logger.info('No admin access detected', { requestId });
-        return { isAdmin: false, canManageTimers: false };
+        return {
+          isAdmin: false,
+          canManageTimers: false,
+          isSystemAdmin: false,
+          userInfo: { login: '', permissions: [] }
+        };
       }
     }
   }
@@ -852,14 +917,39 @@ export class YouTrackAPI {
   }
 
   /**
-   * Cancel active timer for a specific issue
+   * Cancel active timer for a specific issue with enhanced audit logging
    * Updates Timer Youtrack field to "Cancel Timer" - workflow will handle the rest
    */
-  async cancelTimer(issueId: string): Promise<void> {
+  async cancelTimer(
+    issueId: string,
+    context?: {
+      targetUsername?: string;
+      issueKey?: string;
+      adminUsername?: string;
+      reason?: string;
+    }
+  ): Promise<void> {
     const requestId = RequestIdGenerator.generate();
 
     try {
-      this.logger.info('Cancelling timer for issue', { issueId, requestId });
+      // Get current user permissions for audit
+      const permissions = await this.checkUserPermissions();
+
+      if (!permissions.isSystemAdmin) {
+        throw createError.permission(
+          'Only system-admin users can cancel timers',
+          'CANCEL_TIMER_SYSTEM_ADMIN_REQUIRED',
+          { issueId, userPermissions: permissions },
+          requestId
+        );
+      }
+
+      this.logger.info('System-admin cancelling timer for issue', {
+        issueId,
+        context,
+        adminUser: permissions.userInfo?.login,
+        requestId
+      });
 
       await this.makeRequest(
         `issues/${issueId}`,
@@ -877,11 +967,41 @@ export class YouTrackAPI {
         requestId
       );
 
-      this.logger.info('Timer cancelled successfully - workflow will process', {
+      // Create comprehensive audit log
+      const auditLog = {
+        action: 'TIMER_CANCELLED_BY_ADMIN',
+        timestamp: new Date().toISOString(),
         issueId,
-        action: 'Cancel Timer',
-        requestId
-      });
+        issueKey: context?.issueKey,
+        targetUser: context?.targetUsername,
+        adminUser: permissions.userInfo?.login || 'system-admin',
+        reason: context?.reason || 'No reason provided',
+        requestId,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'widget-context',
+        sessionInfo: {
+          isSystemAdmin: permissions.isSystemAdmin,
+          permissions: permissions.userInfo?.permissions || []
+        }
+      };
+
+      this.logger.info('Timer cancelled successfully by system-admin', auditLog);
+
+      // Store audit log in localStorage for potential reporting
+      if (typeof localStorage !== 'undefined') {
+        try {
+          const auditLogs = JSON.parse(localStorage.getItem('youtrack_timer_audit_logs') || '[]');
+          auditLogs.push(auditLog);
+
+          // Keep only last 100 audit logs to prevent storage bloat
+          if (auditLogs.length > 100) {
+            auditLogs.splice(0, auditLogs.length - 100);
+          }
+
+          localStorage.setItem('youtrack_timer_audit_logs', JSON.stringify(auditLogs));
+        } catch (storageError) {
+          this.logger.warn('Failed to store audit log in localStorage', storageError as Error);
+        }
+      }
 
       // Invalidate cache for this issue to force refresh
       await this.invalidateCache(`issue_${issueId}`);
@@ -890,16 +1010,17 @@ export class YouTrackAPI {
     } catch (error: any) {
       this.logger.error('Failed to cancel timer', error as Error, {
         issueId,
+        context,
         errorCode: error.code,
         requestId
       });
 
       // Enhanced error handling for common issues
-      if (error.code === 'PERMISSION_DENIED') {
+      if (error.code === 'PERMISSION_DENIED' || error.code === 'CANCEL_TIMER_SYSTEM_ADMIN_REQUIRED') {
         throw createError.permission(
           'Insufficient permissions to cancel timer. System-admin access required.',
           'CANCEL_TIMER_PERMISSION_DENIED',
-          { issueId },
+          { issueId, context },
           requestId
         );
       }
@@ -908,12 +1029,38 @@ export class YouTrackAPI {
         throw createError.api(
           'Issue not found or Timer Youtrack field not available',
           'ISSUE_OR_FIELD_NOT_FOUND',
-          { issueId },
+          { issueId, context },
           requestId
         );
       }
 
       throw error;
+    }
+  }
+
+  /**
+   * Get audit logs for timer cancellations (admin only)
+   */
+  async getTimerAuditLogs(limit: number = 50): Promise<any[]> {
+    const permissions = await this.checkUserPermissions();
+
+    if (!permissions.isSystemAdmin) {
+      throw createError.permission(
+        'Only system-admin can access audit logs',
+        'AUDIT_LOG_SYSTEM_ADMIN_REQUIRED'
+      );
+    }
+
+    if (typeof localStorage === 'undefined') {
+      return [];
+    }
+
+    try {
+      const auditLogs = JSON.parse(localStorage.getItem('youtrack_timer_audit_logs') || '[]');
+      return auditLogs.slice(-limit).reverse(); // Return most recent first
+    } catch (error) {
+      this.logger.error('Failed to retrieve audit logs', error as Error);
+      return [];
     }
   }
 

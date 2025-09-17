@@ -10,6 +10,7 @@ import { format, subDays, subHours, isWithinInterval } from 'date-fns';
 import { YouTrackAPI, processTimerData, calculateStats, formatDuration } from '../../services/api';
 import { TimerEntry, TimerStats, ProjectTimerStats, UserTimerStats } from '../../types';
 import { Logger } from '../../services/logger';
+import AdminConfirmDialog from '../../components/AdminConfirmDialog';
 import './TimerAnalytics.css';
 
 // Register Chart.js components
@@ -48,8 +49,17 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
   const [selectedMetric, setSelectedMetric] = useState<'count' | 'duration' | 'average'>('count');
   const [selectedTimeRange, setSelectedTimeRange] = useState(timeRange);
   const [selectedProject, setSelectedProject] = useState<string>('all');
-  const [userPermissions, setUserPermissions] = useState({ isAdmin: false, canManageTimers: false });
+  const [userPermissions, setUserPermissions] = useState({
+    isAdmin: false,
+    canManageTimers: false,
+    isSystemAdmin: false,
+    userInfo: { login: '', permissions: [] }
+  });
   const [cancelingTimer, setCancelingTimer] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    timer?: TimerEntry;
+  }>({ isOpen: false });
 
   const logger = Logger.getLogger('TimerAnalytics');
   const api = new YouTrackAPI(host);
@@ -85,10 +95,15 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
       try {
         const permissions = await api.checkUserPermissions();
         setUserPermissions(permissions);
-        logger.info('User permissions checked', permissions);
+        logger.info('User permissions checked with enhanced system-admin detection', permissions);
       } catch (error) {
         logger.warn('Failed to check permissions, assuming no admin access', error as Error);
-        setUserPermissions({ isAdmin: false, canManageTimers: false });
+        setUserPermissions({
+          isAdmin: false,
+          canManageTimers: false,
+          isSystemAdmin: false,
+          userInfo: { login: '', permissions: [] }
+        });
       }
     };
 
@@ -97,40 +112,86 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
     }
   }, [api, host, logger]);
 
-  // Cancel timer function
-  const handleCancelTimer = useCallback(async (issueId: string, issueKey: string, username: string) => {
-    if (!userPermissions.canManageTimers) {
-      logger.warn('User attempted to cancel timer without permissions', { issueId, issueKey, username });
-      setError('Apenas usuários system-admin podem cancelar timers');
+  // Open cancel confirmation dialog
+  const handleCancelTimerClick = useCallback((timer: TimerEntry) => {
+    if (!userPermissions.isSystemAdmin) {
+      logger.warn('User attempted to cancel timer without system-admin permissions', {
+        issueId: timer.issueId,
+        issueKey: timer.issueKey,
+        username: timer.username,
+        userPermissions
+      });
+      setError('Apenas usuários system-admin podem cancelar timers de outros usuários');
       return;
     }
 
-    try {
-      setCancelingTimer(issueId);
-      logger.info('Cancelling timer', { issueId, issueKey, username });
+    setConfirmDialog({
+      isOpen: true,
+      timer
+    });
+  }, [userPermissions.isSystemAdmin, logger]);
 
-      await api.cancelTimer(issueId);
+  // Confirm cancel timer with enhanced audit logging
+  const handleConfirmCancelTimer = useCallback(async (reason?: string) => {
+    const timer = confirmDialog.timer;
+    if (!timer) return;
+
+    try {
+      setCancelingTimer(timer.issueId);
+      setConfirmDialog({ isOpen: false });
+
+      logger.info('System-admin cancelling timer with confirmation', {
+        issueId: timer.issueId,
+        issueKey: timer.issueKey,
+        username: timer.username,
+        adminUser: userPermissions.userInfo?.login,
+        reason
+      });
+
+      // Call enhanced cancelTimer with context
+      await api.cancelTimer(timer.issueId, {
+        targetUsername: timer.username,
+        issueKey: timer.issueKey,
+        adminUsername: userPermissions.userInfo?.login,
+        reason
+      });
 
       // Refresh data to reflect changes
       await fetchAnalyticsData();
 
-      logger.info('Timer cancelled successfully', { issueId, issueKey, username });
+      logger.info('Timer cancelled successfully by system-admin', {
+        issueId: timer.issueId,
+        issueKey: timer.issueKey,
+        username: timer.username,
+        reason
+      });
+
       setError(null);
 
     } catch (error: any) {
-      logger.error('Failed to cancel timer', error as Error, { issueId, issueKey, username });
+      logger.error('Failed to cancel timer', error as Error, {
+        issueId: timer.issueId,
+        issueKey: timer.issueKey,
+        username: timer.username,
+        reason
+      });
 
-      if (error.code === 'CANCEL_TIMER_PERMISSION_DENIED') {
+      if (error.code === 'CANCEL_TIMER_PERMISSION_DENIED' || error.code === 'CANCEL_TIMER_SYSTEM_ADMIN_REQUIRED') {
         setError('Permissões insuficientes para cancelar timer. Acesso system-admin necessário.');
       } else if (error.code === 'ISSUE_OR_FIELD_NOT_FOUND') {
-        setError(`Issue ${issueKey} não encontrado ou campo Timer Youtrack não disponível`);
+        setError(`Issue ${timer.issueKey} não encontrado ou campo Timer Youtrack não disponível`);
       } else {
-        setError(`Falha ao cancelar timer para ${issueKey}: ${error.message}`);
+        setError(`Falha ao cancelar timer para ${timer.issueKey}: ${error.message}`);
       }
     } finally {
       setCancelingTimer(null);
     }
-  }, [api, userPermissions.canManageTimers, fetchAnalyticsData, logger]);
+  }, [api, confirmDialog.timer, userPermissions, fetchAnalyticsData, logger]);
+
+  // Cancel confirmation dialog
+  const handleCancelConfirmDialog = useCallback(() => {
+    setConfirmDialog({ isOpen: false });
+  }, []);
 
   // Auto refresh
   useEffect(() => {
@@ -408,10 +469,13 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
       {/* Active Issues List */}
       <div className="active-issues-section">
         <h3>🔥 Issues com Timers Ativos</h3>
-        {userPermissions.canManageTimers && (
+        {userPermissions.isSystemAdmin && (
           <div className="admin-notice">
-            <span className="admin-badge">🔧 System Admin</span>
-            <span className="admin-text">Você pode cancelar timers de outros usuários</span>
+            <span className="admin-badge">🛡️ System Admin</span>
+            <span className="admin-text">
+              Você pode cancelar timers de outros usuários
+              {userPermissions.userInfo?.login && ` (${userPermissions.userInfo.login})`}
+            </span>
           </div>
         )}
         <div className="active-issues-grid">
@@ -439,22 +503,22 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
                   </div>
                 </div>
 
-                {userPermissions.canManageTimers && (
+                {userPermissions.isSystemAdmin && (
                   <div className="timer-actions">
                     <button
-                      className="cancel-timer-button"
-                      onClick={() => handleCancelTimer(timer.issueId, timer.issueKey, timer.username)}
+                      className="admin-cancel-timer-btn"
+                      onClick={() => handleCancelTimerClick(timer)}
                       disabled={cancelingTimer === timer.issueId}
-                      title={`Cancelar Timer para ${timer.issueKey} (usuário: ${timer.username})`}
+                      title={`Cancelar Timer para ${timer.issueKey} (usuário: ${timer.username}) - System Admin`}
                     >
                       {cancelingTimer === timer.issueId ? (
                         <>
                           <span className="loading-spinner">⟳</span>
-                          <span>Cancelando...</span>
+                          <span>Processando...</span>
                         </>
                       ) : (
                         <>
-                          <span>🛑</span>
+                          <span className="admin-icon">🛡️</span>
                           <span>Cancelar</span>
                         </>
                       )}
@@ -571,6 +635,22 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
         <span>Última atualização: {new Date().toLocaleTimeString()}</span>
         <span>Próxima atualização em: {Math.ceil(refreshInterval / 1000)}s</span>
       </div>
+
+      {/* Admin Confirmation Dialog */}
+      <AdminConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title="Cancelar Timer - System Admin"
+        message={`Tem certeza que deseja cancelar o timer ativo? Esta ação será registrada no log de auditoria.`}
+        targetUser={confirmDialog.timer?.username || ''}
+        issueKey={confirmDialog.timer?.issueKey || ''}
+        adminUser={userPermissions.userInfo?.login || 'system-admin'}
+        onConfirm={handleConfirmCancelTimer}
+        onCancel={handleCancelConfirmDialog}
+        confirmText="Cancelar Timer"
+        cancelText="Voltar"
+        requireReason={false}
+        isDangerous={true}
+      />
     </div>
   );
 };
