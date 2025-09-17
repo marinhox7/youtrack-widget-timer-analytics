@@ -35,7 +35,11 @@
       "Bash(git log:*)",
       "Bash(dir:*)",
       "Bash(rm:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(tasklist:*)",
+      "Bash(wmic:*)",
+      "Bash(taskkill:*)",
+      "Bash(tskill:*)"
     ],
     "deny": [],
     "ask": []
