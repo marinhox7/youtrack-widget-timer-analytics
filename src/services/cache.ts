@@ -412,7 +412,7 @@ export function Cached(ttl?: number, keyGenerator?: (...args: any[]) => string) 
  */
 export const globalCache = new MemoryCache({
   enabled: true,
-  defaultTtl: 30000, // 30 seconds
+  defaultTtl: 45000, // 45 seconds (optimized for analytics)
   maxEntries: 1000,
   strategy: 'lru'
 });

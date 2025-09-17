@@ -109,20 +109,18 @@ export class YouTrackAPI {
       query += ` ${options.customQuery}`;
     }
 
-    // Optimize fields for better performance
+    // Optimize fields for better performance (request only what is used)
+    // Note: Requesting all custom fields can be very heavy. While YouTrack
+    // fields filtering for a specific custom field name is limited, we still
+    // minimize other fields drastically to cut payload size.
     const defaultFields = [
       'id',
       'summary',
-      'description',
-      'project(id,shortName,name)',
+      'project(shortName,name)',
       'numberInProject',
-      'customFields(name,value,field(name,fieldType))',
-      'assignees(login,fullName,id)',
-      'created',
       'updated',
-      'tags(name,color)',
-      'priority(name)',
-      'state(name)'
+      // Keep customFields minimal; we only need to locate and parse the timer field
+      'customFields(name,value,field(name))'
     ];
 
     const fields = options.fields || defaultFields;

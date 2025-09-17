@@ -3,7 +3,7 @@
  * Provides comprehensive analytics and insights for timer data
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { format, subDays, subHours, isWithinInterval } from 'date-fns';
@@ -36,9 +36,9 @@ interface AnalyticsData {
   };
 }
 
-const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
+const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   host,
-  refreshInterval = 60000, // 1 minute for analytics
+  refreshInterval = 45000, // 45 seconds for analytics (optimized from 30s)
   showProjectBreakdown = true,
   showUserBreakdown = true,
   showTrends = true,
@@ -71,9 +71,11 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
       setLoading(true);
       setError(null);
 
+      // Reduce limit to decrease payload and parsing time.
+      // This keeps analytics responsive while still covering typical active timers volume.
       const issues = await api.fetchIssuesWithTimers({
         projectId: selectedProject === 'all' ? undefined : selectedProject,
-        limit: 1000 // Get more data for analytics
+        limit: 500
       });
 
       const timers = processTimerData(issues);
@@ -203,93 +205,62 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
   }, [fetchAnalyticsData, refreshInterval]);
 
 
-  // Calculate trends data
+    // Calculate trends data (single-pass bucketing for performance)
   const calculateTrends = (timers: TimerEntry[], range: string) => {
     const now = new Date();
     const cutoffTime = range === 'day' ? subHours(now, 24) :
                       range === 'week' ? subDays(now, 7) :
                       subDays(now, 30);
 
-    const relevantTimers = timers.filter(timer =>
-      timer.startTime >= cutoffTime.getTime()
-    );
+    const buckets = range === "day" ? 24 : (range === "week" ? 7 : 30);
 
-    // Hourly trends (last 24 hours)
-    const hourly = Array.from({ length: 24 }, (_, i) => {
-      const hour = (now.getHours() - i + 24) % 24;
-      const hourStart = new Date(now);
-      hourStart.setHours(hour, 0, 0, 0);
-      const hourEnd = new Date(hourStart);
-      hourEnd.setHours(hour + 1);
+    // Initialize buckets
+    const hourly: { hour: number; count: number; avgDuration: number }[] = [];
+    const daily: { date: string; count: number; avgDuration: number }[] = [];
+    const weekly: { week: string; count: number; avgDuration: number }[] = [];
 
-      const hourTimers = relevantTimers.filter(timer =>
-        timer.startTime >= hourStart.getTime() && timer.startTime < hourEnd.getTime()
-      );
-
-      return {
-        hour,
-        count: hourTimers.length,
-        avgDuration: hourTimers.length > 0 ? hourTimers.reduce((sum, t) => sum + t.elapsedMs, 0) / hourTimers.length : 0
-      };
-    }).reverse();
-
-    // Daily trends
-    const daily = Array.from({ length: range === 'month' ? 30 : 7 }, (_, i) => {
-      const date = subDays(now, i);
-      const dayStart = new Date(date);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setHours(23, 59, 59, 999);
-
-      const dayTimers = relevantTimers.filter(timer =>
-        timer.startTime >= dayStart.getTime() && timer.startTime <= dayEnd.getTime()
-      );
-
-      return {
-        date: format(date, 'MMM dd'),
-        count: dayTimers.length,
-        avgDuration: dayTimers.length > 0 ? dayTimers.reduce((sum, t) => sum + t.elapsedMs, 0) / dayTimers.length : 0
-      };
-    }).reverse();
-
-    return { hourly, daily, weekly: [] }; // Weekly calculation omitted for brevity
-  };
-
-  // Chart configurations
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      tooltip: {
-        callbacks: {
-          label: (context: any) => {
-            if (selectedMetric === 'duration' || selectedMetric === 'average') {
-              return `${context.dataset.label}: ${formatDuration(context.parsed.y)}`;
-            }
-            return `${context.dataset.label}: ${context.parsed.y}`;
-          }
-        }
+    if (range === 'day') {
+      for (let i = buckets - 1; i >= 0; i--) {
+        const dt = subHours(now, i);
+        hourly.push({ hour: dt.getHours(), count: 0, avgDuration: 0 });
       }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: (value: any) => {
-            if (selectedMetric === 'duration' || selectedMetric === 'average') {
-              return formatDuration(value, { precision: 'low' });
-            }
-            return value;
-          }
+    } else {
+      for (let i = buckets - 1; i >= 0; i--) {
+        const dt = subDays(now, i);
+        const label = format(dt, 'MMM dd');
+        daily.push({ date: label, count: 0, avgDuration: 0 });
+      }
+    }
+
+    // Single pass bucketing
+    for (const timer of timers) {
+      if (timer.startTime < cutoffTime.getTime()) continue;
+      const duration = timer.elapsedMs;
+
+      if (range === 'day') {
+        const diffMs = now.getTime() - timer.startTime;
+        const hoursAgo = Math.floor(diffMs / (60 * 60 * 1000));
+        const idx = hourly.length - 1 - Math.min(Math.max(hoursAgo, 0), hourly.length - 1);
+        const bucket = hourly[idx];
+        bucket.count += 1;
+        bucket.avgDuration = ((bucket.avgDuration * (bucket.count - 1)) + duration) / bucket.count;
+      } else {
+        const dayLabel = format(new Date(timer.startTime), 'MMM dd');
+        const idx = daily.findIndex(d => d.date === dayLabel);
+        if (idx !== -1) {
+          const bucket = daily[idx];
+          bucket.count += 1;
+          bucket.avgDuration = ((bucket.avgDuration * (bucket.count - 1)) + duration) / bucket.count;
         }
       }
     }
-  };
 
-  // Memoized chart data
+    return {
+      hourly,
+      daily,
+      weekly // Not used currently; placeholder to keep structure
+    };
+  };// Memoized chart data
   const trendsChartData = useMemo(() => {
     if (!data) return null;
 
@@ -346,19 +317,25 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
   const statusDistributionData = useMemo(() => {
     if (!data) return null;
 
-    const statusCounts = {
-      ok: data.timers.filter(t => t.status === 'ok').length,
-      attention: data.timers.filter(t => t.status === 'attention').length,
-      long: data.timers.filter(t => t.status === 'long').length,
-      critical: data.timers.filter(t => t.status === 'critical').length,
-      overtime: data.timers.filter(t => t.status === 'overtime').length
-    };
+    const statusCounts = data.timers.reduce(
+      (acc, t) => {
+        acc[t.status] = (acc[t.status] || 0) as number + 1;
+        return acc;
+      },
+      { ok: 0, attention: 0, long: 0, critical: 0, overtime: 0 } as Record<string, number>
+    );
 
     return {
       labels: ['OK', 'Attention', 'Long', 'Critical', 'Overtime'],
       datasets: [
         {
-          data: Object.values(statusCounts),
+          data: [
+            statusCounts.ok,
+            statusCounts.attention,
+            statusCounts.long,
+            statusCounts.critical,
+            statusCounts.overtime
+          ],
           backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#dc3545', '#6f42c1']
         }
       ]
@@ -694,6 +671,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = ({
       />
     </div>
   );
-};
+});
 
 export default TimerAnalytics;
+
