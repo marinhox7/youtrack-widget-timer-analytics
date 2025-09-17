@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npm run build:*)",
       "Bash(npm run lint)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run upload:*)",
+      "Bash(npm run pack:*)",
+      "Bash(youtrack-app:*)",
+      "Bash(echo $YOUTRACK_HOST)",
+      "Bash(export YOUTRACK_HOST=braiphub.youtrack.cloud)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
