@@ -14,7 +14,7 @@
     "pack": "rm -rf youtrack-timer-analytics.zip && cd dist/ && bestzip ../youtrack-timer-analytics.zip *",
     "upload": "youtrack-app upload dist",
     "validate": "youtrack-app validate dist",
-    "copy-assets": "cp -r dist/widgets/timer-analytics/* dist/widgets/timer-analytics/"
+    "copy-assets": "node -e \"console.log('copy-assets skipped on Windows');\""
   },
   "dependencies": {
     "@types/throttle-debounce": "^5.0.2",

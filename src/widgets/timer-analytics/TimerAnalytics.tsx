@@ -260,7 +260,43 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       daily,
       weekly // Not used currently; placeholder to keep structure
     };
-  };// Memoized chart data
+  };
+
+  // Chart options (memoized to avoid re-renders)
+  const chartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            if (selectedMetric === 'duration' || selectedMetric === 'average') {
+              return `${context.dataset.label}: ${formatDuration(context.parsed.y)}`;
+            }
+            return `${context.dataset.label}: ${context.parsed.y}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value: any) => {
+            if (selectedMetric === 'duration' || selectedMetric === 'average') {
+              return formatDuration(value, { precision: 'low' });
+            }
+            return value;
+          }
+        }
+      }
+    }
+  }), [selectedMetric]);
+
+  // Memoized chart data
   const trendsChartData = useMemo(() => {
     if (!data) return null;
 
