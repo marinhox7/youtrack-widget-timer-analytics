@@ -60,7 +60,23 @@ export const BRAIP_COLORS = {
   },
 } as const;
 
-// Project color mapping
+// Specific project color mapping for consistent colors - PRIORITY SYSTEM
+export const PROJECT_COLORS_MAP: Record<string, string> = {
+  'BNP': BRAIP_COLORS.primary[600],    // #6D36FB - Primary Purple (DIFERENTE)
+  'BP': BRAIP_COLORS.secondary[600],   // #99FF33 - Secondary Green (DIFERENTE)
+  'BC': BRAIP_COLORS.orange[600],      // #FF9900 - Orange (DIFERENTE)
+  'BL': BRAIP_COLORS.blue[600],        // #3399FF - Blue
+  'TI': BRAIP_COLORS.green[600],       // #5EC34D - Green
+  'DDS': BRAIP_COLORS.pink[600],       // #FF3FCE - Pink
+  'TP': BRAIP_COLORS.yellow[600],      // #FFD600 - Yellow
+  'PM': BRAIP_COLORS.red[600],         // #FF2E2E - Red
+  'BSH': BRAIP_COLORS.primary[500],    // #8A5EFC - Light Purple
+  'SRL': BRAIP_COLORS.green[500],      // #72D761 - Light Green
+  'PBL': BRAIP_COLORS.red[500],        // #FE5F5F - Light Red
+  'TEST': BRAIP_COLORS.primary[400],   // #A786FD - Purple Medium
+};
+
+// Fallback color array for unknown projects
 export const PROJECT_COLORS = [
   BRAIP_COLORS.primary[600],   // Purple
   BRAIP_COLORS.secondary[600], // Green-yellow
@@ -81,17 +97,25 @@ export const STATUS_COLORS = {
 } as const;
 
 /**
- * Get color for a project based on its short name or index
+ * Get color for a project based on its short name or index - PRIORITY MAPPING
  */
 export function getProjectColor(projectKey: string | number): string {
   if (typeof projectKey === 'number') {
     return PROJECT_COLORS[projectKey % PROJECT_COLORS.length];
   }
 
-  // Create a consistent hash from project key for consistent colors
+  // Normalize to uppercase for consistent lookup
+  const normalizedKey = projectKey?.toString().toUpperCase().trim();
+
+  // First check if we have a specific mapping for this project
+  if (normalizedKey && PROJECT_COLORS_MAP[normalizedKey]) {
+    return PROJECT_COLORS_MAP[normalizedKey];
+  }
+
+  // Fallback to hash-based color for unknown projects
   let hash = 0;
-  for (let i = 0; i < projectKey.length; i++) {
-    const char = projectKey.charCodeAt(i);
+  for (let i = 0; i < normalizedKey.length; i++) {
+    const char = normalizedKey.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash; // Convert to 32-bit integer
   }

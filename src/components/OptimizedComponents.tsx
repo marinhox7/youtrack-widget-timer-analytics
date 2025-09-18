@@ -24,7 +24,7 @@ export const OptimizedTimerItem = memo<{
     switch (timer.status) {
       case 'critical': return '🚨';
       case 'long': return '⚠️';
-      case 'attention': return '⏰';
+      case 'attention': return '⚠️';
       default: return '✅';
     }
   }, [timer.status]);

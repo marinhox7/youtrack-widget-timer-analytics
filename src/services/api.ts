@@ -865,13 +865,54 @@ export function calculateStats(entries: TimerEntry[]): TimerStats {
 }
 
 /**
- * Format duration in HH:MM format (Braip standard)
+ * Format duration in HH:MM format (for timers)
  */
 export function formatDurationHHMM(ms: number): string {
   const totalMinutes = Math.floor(ms / (1000 * 60));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return `${hours}:${minutes.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Format duration in readable format (Xh Ym) for metrics
+ */
+export function formatDurationToHoursMinutes(ms: number): string {
+  const totalMinutes = Math.floor(ms / (1000 * 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours === 0) {
+    return `${minutes}m`;
+  } else if (minutes === 0) {
+    return `${hours}h`;
+  } else {
+    return `${hours}h ${minutes}m`;
+  }
+}
+
+/**
+ * Convert milliseconds to hours (decimal) for charts
+ */
+export function msToHours(ms: number): number {
+  return ms / (1000 * 60 * 60);
+}
+
+/**
+ * Format hours for chart tooltips
+ */
+export function formatHoursForChart(hours: number): string {
+  if (hours < 1) {
+    const minutes = Math.round(hours * 60);
+    return `${minutes}m`;
+  }
+  const wholeHours = Math.floor(hours);
+  const minutes = Math.round((hours - wholeHours) * 60);
+
+  if (minutes === 0) {
+    return `${wholeHours}h`;
+  }
+  return `${wholeHours}h ${minutes}m`;
 }
 
 /**

@@ -5,10 +5,10 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
-import { YouTrackAPI, processTimerData, calculateStats, formatDuration, formatDurationHHMM } from '../../services/api';
+import { YouTrackAPI, processTimerData, calculateStats, formatDuration, formatDurationHHMM, formatDurationToHoursMinutes, msToHours, formatHoursForChart } from '../../services/api';
 import { TimerEntry, TimerStats } from '../../types';
 import { Logger } from '../../services/logger';
-import { getProjectColor, getCachedProjectColor, getChartColorsForProjects, getStatusColor } from '../../utils/colors';
+import { getProjectColor, getCachedProjectColor, getChartColorsForProjects, getStatusColor, clearProjectColorCache } from '../../utils/colors';
 import '../../styles/colors.css';
 import './TimerAnalytics.css';
 
@@ -81,7 +81,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       labelFormatter: (pointDate: Date, index: number) => string,
       variationFactor: number
     ): TrendPoint[] => {
-      const smoothing = 0.35; // Aumentar suavização
+      const smoothing = 0.15; // Reduzir suavização para evitar ondas
       let previous = baseCount;
 
       return Array.from({ length }).map((_, index) => {
@@ -117,25 +117,25 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         12,
         60 * 60 * 1000,
         (date) => `${date.getHours().toString().padStart(2, '0')}h`,
-        0.15
+        0.05 // Reduzir variação
       ),
       daily: buildSeries(
         24,
         60 * 60 * 1000,
         (date) => `${date.getHours().toString().padStart(2, '0')}h`,
-        0.12
+        0.04 // Reduzir variação
       ),
       weekly: buildSeries(
         7,
         24 * 60 * 60 * 1000,
         (date) => dayNames[date.getDay()],
-        0.10
+        0.03 // Reduzir variação
       ),
       monthly: buildSeries(
         30,
         24 * 60 * 60 * 1000,
         (date) => `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`,
-        0.08
+        0.02 // Reduzir variação
       )
     };
   }, []);
@@ -168,6 +168,8 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
 
   // Auto refresh
   useEffect(() => {
+    // Limpar cache de cores para garantir aplicação das novas cores
+    clearProjectColorCache();
     fetchAnalyticsData();
     const interval = setInterval(fetchAnalyticsData, refreshInterval);
     return () => clearInterval(interval);
@@ -220,8 +222,8 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     const values = trendsData.map((d: any) => {
       switch (selectedMetric) {
         case 'count': return d.count;
-        case 'duration': return d.count * (d.avgDuration / (1000 * 60));
-        case 'average': return d.avgDuration / (1000 * 60);
+        case 'duration': return msToHours(d.count * d.avgDuration);
+        case 'average': return msToHours(d.avgDuration);
         default: return d.count;
       }
     });
@@ -231,13 +233,13 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       datasets: [
         {
           label: selectedMetric === 'count' ? 'Timers Ativos' :
-                 selectedMetric === 'duration' ? 'Duração Total (min)' : 'Duração Média (min)',
+                 selectedMetric === 'duration' ? 'Duração Total (h)' : 'Duração Média (h)',
           data: values,
           backgroundColor: 'rgba(0, 122, 204, 0.1)',
           borderColor: 'rgba(0, 122, 204, 0.8)',
           borderWidth: 3,
           fill: false, // Não preencher área
-          tension: 0.4, // Suavização
+          tension: 0.1, // Suavização reduzida (evita ondas)
           pointRadius: selectedTimeRange === 'month' ? 0 : 2, // Pontos ainda menores
           pointHoverRadius: selectedTimeRange === 'month' ? 4 : 5,
           pointHitRadius: selectedTimeRange === 'month' ? 6 : 8,
@@ -261,8 +263,8 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       labels: projectKeys,
       datasets: [
         {
-          label: 'Timers Ativos',
-          data: projects.map(p => p.timerCount),
+          label: 'Duração Total (h)',
+          data: projects.map(p => msToHours(p.totalTimeMs)),
           backgroundColor: getChartColorsForProjects(projectKeys),
           borderWidth: 2,
           borderColor: '#ffffff'
@@ -316,22 +318,46 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     },
     elements: {
       line: {
-        tension: 0.5, // Maior suavização
-        borderWidth: 2
+        tension: 0.1, // Tensão reduzida para evitar ondas
+        borderWidth: 2,
+        fill: false
       },
       point: {
-        radius: 2,
-        hoverRadius: 5
+        radius: 3,
+        hoverRadius: 5,
+        borderWidth: 1,
+        hoverBorderWidth: 2
       }
     },
     plugins: {
       legend: {
         position: 'top' as const,
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const value = context.parsed.y;
+            if (selectedMetric === 'count') {
+              return `${context.dataset.label}: ${value}`;
+            } else {
+              return `${context.dataset.label}: ${formatHoursForChart(value)}`;
+            }
+          }
+        }
       }
     },
     scales: {
       y: {
-        beginAtZero: true
+        beginAtZero: true,
+        ticks: {
+          callback: function(value: any) {
+            if (selectedMetric === 'count') {
+              return value;
+            } else {
+              return formatHoursForChart(value);
+            }
+          }
+        }
       }
     }
   };
@@ -360,7 +386,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
           <h2>📊 Timer Analytics</h2>
           <div className="header-controls">
             <button onClick={fetchAnalyticsData} className="refresh-button">
-              ↻ Tentar Novamente
+              Tentar Novamente
             </button>
           </div>
         </div>
@@ -438,7 +464,11 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       {/* Key Metrics */}
       <div className="metrics-grid">
         <div className="metric-card">
-          <div className="metric-icon">👥</div>
+          <div className="metric-icon">
+            <svg width="24" height="24" fill="#FFFFFF" viewBox="0 0 24 24">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          </div>
           <div className="metric-content">
             <div className="metric-value">{quickStats.totalUsers}</div>
             <div className="metric-label">Usuários Ativos</div>
@@ -446,7 +476,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         </div>
 
         <div className="metric-card">
-          <div className="metric-icon">⏱️</div>
+          <div className="metric-icon">📊</div>
           <div className="metric-content">
             <div className="metric-value">{quickStats.totalTimers}</div>
             <div className="metric-label">Timers Ativos</div>
@@ -464,7 +494,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         <div className="metric-card">
           <div className="metric-icon">📊</div>
           <div className="metric-content">
-            <div className="metric-value">{formatDurationHHMM(quickStats.averageTime)}</div>
+            <div className="metric-value">{formatDurationToHoursMinutes(quickStats.averageTime)}</div>
             <div className="metric-label">Tempo Médio</div>
           </div>
         </div>
@@ -522,7 +552,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
 
                   <div className="issue-meta">
                     <span className="timer-duration">
-                      ⏱️ {formatDurationHHMM(timer.elapsedMs)}
+                      {formatDurationHHMM(timer.elapsedMs)}
                     </span>
                     <span className="timer-user">
                       👤 {timer.username}
@@ -559,6 +589,24 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
                   plugins: {
                     legend: {
                       display: false
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context: any) {
+                          const value = context.parsed.y;
+                          return `${context.dataset.label}: ${formatHoursForChart(value)}`;
+                        }
+                      }
+                    }
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        callback: function(value: any) {
+                          return formatHoursForChart(value);
+                        }
+                      }
                     }
                   }
                 }}
