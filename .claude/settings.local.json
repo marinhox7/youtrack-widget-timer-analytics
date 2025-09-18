@@ -14,7 +14,8 @@
       "Bash(git push:*)",
       "Bash(source .env)",
       "Bash(set YOUTRACK_HOST=braiphub.youtrack.cloud)",
-      "Bash(echo \"YOUTRACK_HOST=$YOUTRACK_HOST\")"
+      "Bash(echo \"YOUTRACK_HOST=$YOUTRACK_HOST\")",
+      "Bash(echo \"Variables set: HOST=$YOUTRACK_HOST\")"
     ],
     "deny": [],
     "ask": []
