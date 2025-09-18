@@ -15,33 +15,102 @@ import './TimerAnalytics.css';
 // Register Chart.js components
 ChartJS.register(...registerables);
 
-// Memoized Timer Card Component
-const TimerCard = memo(({ timer }: { timer: TimerEntry }) => (
-  <div className="active-issue-card">
-    <div className="issue-content">
-      <div className="issue-header">
-        <span className="issue-id">{timer.issueKey}</span>
-        <span className="issue-project">{timer.projectShortName}</span>
-      </div>
-      <div className="issue-title">{timer.issueSummary}</div>
-      <div className="issue-meta">
-        <span className="timer-duration">⏱️ {formatDuration(timer.elapsedMs, { precision: 'medium' })}</span>
-        <span className="timer-user">👤 {timer.username}</span>
-      </div>
-      <div className="issue-status">
-        <span className={`status-badge ${timer.status}`}>
-          {timer.status === 'ok' && '✅ OK'}
-          {timer.status === 'attention' && '⚠️ Atenção'}
-          {timer.status === 'long' && '🟡 Longo'}
-          {timer.status === 'critical' && '🟠 Crítico'}
-          {timer.status === 'overtime' && '🔴 Overtime'}
-        </span>
+// Memoized Timer Card Component with clickable links
+const TimerCard = memo(({ timer }: { timer: TimerEntry }) => {
+  const handleIssueClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(timer.issueUrl, '_blank', 'noopener,noreferrer');
+  }, [timer.issueUrl]);
+
+  const handleTitleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(timer.issueUrl, '_blank', 'noopener,noreferrer');
+  }, [timer.issueUrl]);
+
+  return (
+    <div className="active-issue-card">
+      <div className="issue-content">
+        <div className="issue-header">
+          <a
+            href={timer.issueUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="issue-link clickable"
+            onClick={handleIssueClick}
+            title={`Abrir ${timer.issueKey} em nova aba`}
+          >
+            {timer.issueKey}
+          </a>
+          <span className={`project-badge project-${timer.projectShortName.toLowerCase()}`}>
+            {timer.projectShortName}
+          </span>
+        </div>
+        <div
+          className="issue-title clickable-title"
+          onClick={handleTitleClick}
+          title={`Clique para abrir: ${timer.issueSummary}`}
+        >
+          {timer.issueSummary}
+        </div>
+        <div className="issue-meta">
+          <span className="timer-duration">⏱️ {formatDuration(timer.elapsedMs, { precision: 'medium' })}</span>
+          <span className="timer-user">👤 {timer.username}</span>
+        </div>
+        <div className="issue-status">
+          <span className={`status-badge ${timer.status}`}>
+            {timer.status === 'ok' && '✅ OK'}
+            {timer.status === 'attention' && '⚠️ Atenção'}
+            {timer.status === 'long' && '🟡 Longo'}
+            {timer.status === 'critical' && '🟠 Crítico'}
+            {timer.status === 'overtime' && '🔴 Overtime'}
+          </span>
+        </div>
       </div>
     </div>
-  </div>
-));
+  );
+});
 
 TimerCard.displayName = 'TimerCard';
+
+// Tooltip Component
+const Tooltip = memo(({ timer, children }: { timer: TimerEntry; children: React.ReactNode }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  const showTooltip = useCallback(() => setIsVisible(true), []);
+  const hideTooltip = useCallback(() => setIsVisible(false), []);
+
+  return (
+    <div
+      className="tooltip-container"
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+    >
+      {children}
+      {isVisible && (
+        <div className="tooltip-content">
+          <div className="tooltip-header">
+            <strong>{timer.issueKey}</strong>
+            <span className={`status-badge ${timer.status}`}>
+              {timer.status.toUpperCase()}
+            </span>
+          </div>
+          <div className="tooltip-body">
+            <p><strong>Usuário:</strong> {timer.username}</p>
+            <p><strong>Iniciado:</strong> {new Date(timer.startTime).toLocaleString('pt-BR')}</p>
+            <p><strong>Duração:</strong> {formatDuration(timer.elapsedMs)}</p>
+            <p><strong>Projeto:</strong> {timer.projectName}</p>
+            <p><strong>Issue:</strong> {timer.issueSummary}</p>
+            {timer.assignees && timer.assignees.length > 0 && (
+              <p><strong>Atribuído:</strong> {timer.assignees.join(', ')}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
+
+Tooltip.displayName = 'Tooltip';
 
 interface TimerAnalyticsProps {
   host?: any;
@@ -428,7 +497,9 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         <div className="active-issues-grid">
           {data.timers.length > 0 ? (
             data.timers.map((timer, index) => (
-              <TimerCard key={`${timer.issueId}-${index}`} timer={timer} />
+              <Tooltip key={`${timer.issueId}-${index}`} timer={timer}>
+                <TimerCard timer={timer} />
+              </Tooltip>
             ))
           ) : (
             <div className="no-active-issues">

@@ -206,25 +206,78 @@
   margin-bottom: 8px !important;
 }
 
-.widget-container .issue-id {
-  font-weight: 600 !important;
+/* Clickable Issue Links */
+.widget-container .issue-link {
   color: #007acc !important;
+  text-decoration: none !important;
+  font-weight: 600 !important;
   font-size: 14px !important;
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace !important;
+  transition: all 0.2s ease !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  background: rgba(0, 122, 204, 0.1) !important;
+  cursor: pointer !important;
+  display: inline-block !important;
 }
 
-.widget-container .issue-project {
-  background-color: #3a3a3a !important;
-  color: #b3b3b3 !important;
+.widget-container .issue-link:hover {
+  background: rgba(0, 122, 204, 0.2) !important;
+  text-decoration: none !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(0, 122, 204, 0.3) !important;
+  color: #0056b3 !important;
+}
+
+.widget-container .issue-link:active {
+  transform: translateY(0) !important;
+}
+
+/* Project Badges */
+.widget-container .project-badge {
+  display: inline-block !important;
   padding: 4px 8px !important;
-  border-radius: 4px !important;
+  border-radius: 12px !important;
   font-size: 11px !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
+  transition: all 0.2s ease !important;
 }
 
-.widget-container .issue-title {
+.widget-container .project-tp {
+  background: #e3f2fd !important;
+  color: #1976d2 !important;
+  border: 1px solid #1976d2 !important;
+}
+
+.widget-container .project-bp {
+  background: #f3e5f5 !important;
+  color: #7b1fa2 !important;
+  border: 1px solid #7b1fa2 !important;
+}
+
+.widget-container .project-pbl {
+  background: #e8f5e8 !important;
+  color: #388e3c !important;
+  border: 1px solid #388e3c !important;
+}
+
+.widget-container .project-sbl {
+  background: #fff3e0 !important;
+  color: #f57c00 !important;
+  border: 1px solid #f57c00 !important;
+}
+
+/* Default project badge for unknown projects */
+.widget-container .project-badge:not(.project-tp):not(.project-bp):not(.project-pbl):not(.project-sbl) {
+  background-color: #3a3a3a !important;
+  color: #b3b3b3 !important;
+  border: 1px solid #404040 !important;
+}
+
+/* Clickable Issue Title */
+.widget-container .clickable-title {
   font-size: 14px !important;
   font-weight: 500 !important;
   color: #ffffff !important;
@@ -234,6 +287,81 @@
   -webkit-line-clamp: 2 !important;
   -webkit-box-orient: vertical !important;
   overflow: hidden !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  border-radius: 4px !important;
+  padding: 4px !important;
+}
+
+.widget-container .clickable-title:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #007acc !important;
+  transform: translateX(2px) !important;
+}
+
+/* Tooltip Styles */
+.widget-container .tooltip-container {
+  position: relative !important;
+  display: inline-block !important;
+  width: 100% !important;
+}
+
+.widget-container .tooltip-content {
+  position: absolute !important;
+  top: -10px !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(-100%) !important;
+  background: #2d2d2d !important;
+  border: 1px solid #007acc !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  z-index: 1000 !important;
+  min-width: 280px !important;
+  max-width: 320px !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  animation: tooltipFadeIn 0.2s ease-out forwards !important;
+}
+
+.widget-container .tooltip-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 8px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid #404040 !important;
+}
+
+.widget-container .tooltip-header strong {
+  color: #007acc !important;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace !important;
+}
+
+.widget-container .tooltip-body {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+.widget-container .tooltip-body p {
+  margin: 4px 0 !important;
+  color: #ffffff !important;
+}
+
+.widget-container .tooltip-body strong {
+  color: #b3b3b3 !important;
+  font-weight: 600 !important;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-100%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-100%);
+  }
 }
 
 .widget-container .issue-meta {
