@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Timer Analytics Layout</title>
+    <link rel="stylesheet" href="src/widgets/timer-analytics/TimerAnalytics.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Layout dos Cards - Timer Analytics</h1>
+
+        <!-- Widget Container -->
+        <div class="widget-container timer-analytics">
+
+            <!-- Header -->
+            <div class="analytics-header">
+                <div class="header-title">
+                    <h2>📊 Timer Analytics</h2>
+                </div>
+                <div class="header-filters">
+                    <button class="refresh-button">
+                        ↻ Atualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">👥</div>
+                    <div class="metric-content">
+                        <div class="metric-value">8</div>
+                        <div class="metric-label">Usuários Ativos</div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">⏱️</div>
+                    <div class="metric-content">
+                        <div class="metric-value">15</div>
+                        <div class="metric-label">Timers Ativos</div>
+                    </div>
+                </div>
+                <div class="metric-card critical">
+                    <div class="metric-icon">🚨</div>
+                    <div class="metric-content">
+                        <div class="metric-value">3</div>
+                        <div class="metric-label">Críticos</div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">📊</div>
+                    <div class="metric-content">
+                        <div class="metric-value">2h 45m</div>
+                        <div class="metric-label">Tempo Médio</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Issues Section -->
+            <div class="active-issues-section">
+                <h3>🔥 Issues com Timers Ativos</h3>
+                <div class="active-issues-info">
+                    Mostrando 6 de 15 timers
+                </div>
+
+                <div class="active-issues-grid">
+                    <!-- Card 1 - OK Status -->
+                    <div class="active-issue-card">
+                        <div class="issue-status">
+                            <span class="status-badge ok">OK</span>
+                        </div>
+                        <div class="issue-header">
+                            <a href="/issue/TP-123" target="_blank" class="issue-id">TP-123</a>
+                            <span class="issue-project">TP</span>
+                        </div>
+                        <div class="issue-title">
+                            Implementar nova funcionalidade de autenticação com OAuth 2.0
+                        </div>
+                        <div class="issue-meta">
+                            <span class="timer-duration">⏱️ 1h 23m</span>
+                            <span class="timer-user">👤 joão.silva</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 2 - Attention Status -->
+                    <div class="active-issue-card">
+                        <div class="issue-status">
+                            <span class="status-badge attention">ATENÇÃO</span>
+                        </div>
+                        <div class="issue-header">
+                            <a href="/issue/BP-456" target="_blank" class="issue-id">BP-456</a>
+                            <span class="issue-project">BP</span>
+                        </div>
+                        <div class="issue-title">
+                            Corrigir bug na validação de formulários
+                        </div>
+                        <div class="issue-meta">
+                            <span class="timer-duration">⏱️ 2h 45m</span>
+                            <span class="timer-user">👤 maria.santos</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3 - Long Status -->
+                    <div class="active-issue-card">
+                        <div class="issue-status">
+                            <span class="status-badge long">LONGO</span>
+                        </div>
+                        <div class="issue-header">
+                            <a href="/issue/PBL-789" target="_blank" class="issue-id">PBL-789</a>
+                            <span class="issue-project">PBL</span>
+                        </div>
+                        <div class="issue-title">
+                            Refatorar sistema de cache para melhorar performance
+                        </div>
+                        <div class="issue-meta">
+                            <span class="timer-duration">⏱️ 5h 12m</span>
+                            <span class="timer-user">👤 carlos.lima</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 4 - Critical Status -->
+                    <div class="active-issue-card">
+                        <div class="issue-status">
+                            <span class="status-badge critical">CRÍTICO</span>
+                        </div>
+                        <div class="issue-header">
+                            <a href="/issue/SBL-101" target="_blank" class="issue-id">SBL-101</a>
+                            <span class="issue-project">SBL</span>
+                        </div>
+                        <div class="issue-title">
+                            Investigar problema de memory leak em produção - alta prioridade
+                        </div>
+                        <div class="issue-meta">
+                            <span class="timer-duration">⏱️ 8h 47m</span>
+                            <span class="timer-user">👤 ana.costa</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 5 - OK Status -->
+                    <div class="active-issue-card">
+                        <div class="issue-status">
+                            <span class="status-badge ok">OK</span>
+                        </div>
+                        <div class="issue-header">
+                            <a href="/issue/TP-234" target="_blank" class="issue-id">TP-234</a>
+                            <span class="issue-project">TP</span>
+                        </div>
+                        <div class="issue-title">
+                            Criar documentação para API REST
+                        </div>
+                        <div class="issue-meta">
+                            <span class="timer-duration">⏱️ 45m</span>
+                            <span class="timer-user">👤 pedro.rocha</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 6 - Critical Status -->
+                    <div class="active-issue-card">
+                        <div class="issue-status">
+                            <span class="status-badge critical">CRÍTICO</span>
+                        </div>
+                        <div class="issue-header">
+                            <a href="/issue/BP-567" target="_blank" class="issue-id">BP-567</a>
+                            <span class="issue-project">BP</span>
+                        </div>
+                        <div class="issue-title">
+                            Resolver problema crítico de segurança na autenticação
+                        </div>
+                        <div class="issue-meta">
+                            <span class="timer-duration">⏱️ 12h 15m</span>
+                            <span class="timer-user">👤 lucia.fernandes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="show-more">
+                    <button class="show-more-btn">
+                        Ver mais 9 timers...
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="analytics-footer">
+                <div>Última atualização: 14:35:22</div>
+                <div>15 timers ativos • 8 usuários</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Responsiveness -->
+    <script>
+        // Test different screen sizes
+        function testResponsiveness() {
+            const container = document.querySelector('.widget-container');
+            const sizes = [
+                { width: '1200px', name: 'Desktop' },
+                { width: '768px', name: 'Tablet' },
+                { width: '480px', name: 'Mobile' }
+            ];
+
+            let currentSize = 0;
+
+            function changeSize() {
+                const size = sizes[currentSize % sizes.length];
+                container.style.maxWidth = size.width;
+                container.style.margin = '0 auto';
+                console.log(`Testing ${size.name} (${size.width})`);
+                currentSize++;
+            }
+
+            // Change size every 3 seconds
+            setInterval(changeSize, 3000);
+            changeSize(); // Initial call
+        }
+
+        // Start responsiveness test
+        setTimeout(testResponsiveness, 1000);
+    </script>
+</body>
+</html>

@@ -689,7 +689,7 @@ export class YouTrackAPI {
   }
 
   /**
-   * Check if current user has admin permissions with enhanced system-admin detection
+   * Check user permissions - SEMPRE retorna false para funções de cancelamento
    */
   async checkUserPermissions(): Promise<{
     isAdmin: boolean;
@@ -698,260 +698,19 @@ export class YouTrackAPI {
     userInfo: { login: string; permissions: string[] };
   }> {
     const requestId = RequestIdGenerator.generate();
-    this.logger.debug('checkUserPermissions called with enhanced system-admin detection', {
-      hasHost: !!this.host,
-      requestId
-    });
+    this.logger.debug('checkUserPermissions called - read-only mode', { requestId });
 
-    // In widget context, assume admin permissions to avoid API errors
-    if (this.host) {
-      this.logger.info('Widget context detected - assuming system-admin permissions', { requestId });
-      return {
-        isAdmin: true,
-        canManageTimers: true,
-        isSystemAdmin: true,
-        userInfo: { login: 'system-admin (widget-context)', permissions: ['ADMIN', 'UPDATE_ISSUE'] }
-      };
-    }
-
-    try {
-      // Try to check current user endpoint first (less likely to fail)
-      const userResponse = await this.makeRequest<YouTrackUser>(
-        'users/me',
-        { method: 'GET' },
-        requestId
-      );
-
-      const user = userResponse.data;
-
-      // Enhanced system-admin detection
-      let hasAdminAccess = false;
-      let isSystemAdmin = false;
-
-      // Primary check: login is 'system-admin'
-      if (user?.login === 'system-admin') {
-        hasAdminAccess = true;
-        isSystemAdmin = true;
-        this.logger.info('System-admin detected via login', { login: user.login, requestId });
-      }
-      // Secondary check: login contains 'admin'
-      else if (user?.login?.includes('admin')) {
-        hasAdminAccess = true;
-        // Only consider system-admin if exactly 'system-admin' or ends with 'system-admin'
-        isSystemAdmin = user.login.endsWith('system-admin');
-        this.logger.info('Admin user detected via login pattern', {
-          login: user.login,
-          isSystemAdmin,
-          requestId
-        });
-      }
-      // Profile-based permission check
-      else if (user?.profiles && Array.isArray(user.profiles)) {
-        const adminProfile = user.profiles.find((profile) => {
-          return profile.permission?.name?.includes('ADMIN') ||
-                 profile.permission?.name?.includes('CREATE_PROJECT') ||
-                 profile.permission?.name?.includes('UPDATE_NOT_OWN');
-        });
-
-        if (adminProfile) {
-          hasAdminAccess = true;
-          // Check if specifically system-admin via permission name
-          isSystemAdmin = !!(adminProfile.permission?.name?.includes('SYSTEM_ADMIN'));
-
-          this.logger.info('Admin detected via profile permissions', {
-            hasAdminAccess,
-            isSystemAdmin,
-            profilePermission: adminProfile.permission?.name,
-            requestId
-          });
-        }
-      }
-
-      const userInfo = {
-        login: user?.login || '',
-        permissions: user?.profiles?.map(p => p.permission?.name).filter(Boolean) || []
-      };
-
-      this.logger.info('User permissions determined with enhanced detection', {
-        login: user?.login,
-        hasAdminAccess,
-        isSystemAdmin,
-        profileCount: user?.profiles?.length || 0,
-        requestId
-      });
-
-      return {
-        isAdmin: hasAdminAccess,
-        canManageTimers: hasAdminAccess,
-        isSystemAdmin,
-        userInfo
-      };
-    } catch (error: any) {
-      this.logger.debug('users/me endpoint not accessible, using fallback detection', {
-        error: error.code || error.message,
-        requestId
-      });
-
-      // Fallback: in widget context, assume limited admin access
-      if (this.host) {
-        this.logger.info('Widget context fallback - assuming limited admin permissions', { requestId });
-        return {
-          isAdmin: true,
-          canManageTimers: true,
-          isSystemAdmin: true,
-          userInfo: { login: 'system-admin (widget-fallback)', permissions: ['UPDATE_ISSUE'] }
-        };
-      }
-
-      this.logger.info('No admin access detected', { requestId });
-      return {
-        isAdmin: false,
-        canManageTimers: false,
-        isSystemAdmin: false,
-        userInfo: { login: '', permissions: [] }
-      };
-    }
+    // SEMPRE retornar false para canManageTimers - sem cancelamento
+    return {
+      isAdmin: false,
+      canManageTimers: false, // SEMPRE false - sem cancelamento
+      isSystemAdmin: false,
+      userInfo: { login: 'read-only-user', permissions: [] }
+    };
   }
 
-  /**
-   * Get work items for an issue
-   */
-  async getWorkItems(issueId: string): Promise<any[]> {
-    const requestId = RequestIdGenerator.generate();
-
-    try {
-      const response = await this.makeRequest<any[]>(
-        `issues/${issueId}/timeTracking/workItems?fields=id,author(login,name),duration,date,text,type(name)`,
-        { method: 'GET' },
-        requestId
-      );
-
-      return response.data || [];
-    } catch (error) {
-      this.logger.error('Failed to fetch work items', null, { issueId, requestId });
-      throw error;
-    }
-  }
-
-  /**
-   * Delete a work item (stops/cancels timer)
-   */
-  async deleteWorkItem(issueId: string, workItemId: string): Promise<boolean> {
-    const requestId = RequestIdGenerator.generate();
-
-    try {
-      await this.makeRequest(
-        `issues/${issueId}/timeTracking/workItems/${workItemId}`,
-        { method: 'DELETE' },
-        requestId
-      );
-
-      this.logger.info('Work item deleted successfully', { issueId, workItemId, requestId });
-      return true;
-    } catch (error) {
-      this.logger.error('Failed to delete work item', null, { issueId, workItemId, requestId });
-      throw error;
-    }
-  }
-
-  /**
-   * Stop timer by updating Timer field to "Stop"
-   */
-  async stopTimer(issueId: string): Promise<boolean> {
-    const requestId = RequestIdGenerator.generate();
-
-    try {
-      await this.makeRequest(
-        `issues/${issueId}`,
-        {
-          method: 'POST',
-          body: {
-            customFields: [
-              {
-                name: 'Timer',
-                value: { name: 'Stop' }
-              }
-            ]
-          }
-        },
-        requestId
-      );
-
-      this.logger.info('Timer stopped successfully', { issueId, requestId });
-      return true;
-    } catch (error) {
-      this.logger.error('Failed to stop timer', null, { issueId, requestId });
-      throw error;
-    }
-  }
-
-  /**
-   * Get audit logs for timer cancellations (admin only)
-   */
-  async getTimerAuditLogs(limit: number = 50): Promise<any[]> {
-    const permissions = await this.checkUserPermissions();
-
-    if (!permissions.isSystemAdmin) {
-      throw createError.permission(
-        'Only system-admin can access audit logs',
-        'AUDIT_LOG_SYSTEM_ADMIN_REQUIRED'
-      );
-    }
-
-    if (typeof localStorage === 'undefined') {
-      return [];
-    }
-
-    try {
-      const auditLogs = JSON.parse(localStorage.getItem('youtrack_timer_audit_logs') || '[]');
-      return auditLogs.slice(-limit).reverse(); // Return most recent first
-    } catch (error) {
-      this.logger.error('Failed to retrieve audit logs', error as Error);
-      return [];
-    }
-  }
-
-  /**
-   * Update issue with custom fields
-   */
-  async updateIssue(issueId: string, customFields: Record<string, any>): Promise<void> {
-    const requestId = RequestIdGenerator.generate();
-
-    try {
-      const fieldsArray = Object.entries(customFields).map(([name, value]) => ({
-        name,
-        value: typeof value === 'object' ? value : { name: value }
-      }));
-
-      await this.makeRequest(
-        `issues/${issueId}`,
-        {
-          method: 'POST',
-          body: {
-            customFields: fieldsArray
-          }
-        },
-        requestId
-      );
-
-      this.logger.info('Issue updated successfully', {
-        issueId,
-        fieldsUpdated: Object.keys(customFields),
-        requestId
-      });
-
-      // Invalidate relevant caches
-      await this.invalidateCache(`issue_${issueId}`);
-
-    } catch (error) {
-      this.logger.error('Failed to update issue', error as Error, {
-        issueId,
-        fields: Object.keys(customFields),
-        requestId
-      });
-      throw error;
-    }
-  }
+  // REMOVIDO: Todos os métodos de cancelamento, workflow, etc.
+  // MANTER APENAS: Funções de leitura
 }
 
 /**

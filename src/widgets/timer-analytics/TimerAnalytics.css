@@ -1,5 +1,213 @@
-/* Timer Analytics Widget Styles - Fixed CSS Isolation */
+/* REESCREVER COMPLETAMENTE: Active Issues Section */
+.active-issues-section {
+  margin: 16px;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
 
+.active-issues-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #212529;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.active-issues-info {
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #6c757d;
+  text-align: right;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* GRID SIMPLES E FUNCIONAL */
+.active-issues-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* CARD COMPLETAMENTE REESTRUTURADO */
+.active-issue-card {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  display: block;
+  position: relative;
+  min-height: 120px;
+}
+
+.active-issue-card:hover {
+  border-color: #007acc;
+  box-shadow: 0 4px 12px rgba(0, 122, 204, 0.15);
+  transform: translateY(-2px);
+}
+
+/* HEADER SIMPLIFICADO */
+.issue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+/* LINK DA ISSUE DESTACADO */
+.issue-id {
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: #007acc;
+  text-decoration: none;
+  background: rgba(0, 122, 204, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 122, 204, 0.2);
+}
+
+.issue-id:hover {
+  background: rgba(0, 122, 204, 0.2);
+  text-decoration: none;
+}
+
+/* BADGE DO PROJETO */
+.issue-project {
+  background: #495057;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* TÍTULO DA ISSUE */
+.issue-title {
+  font-size: 13px;
+  color: #212529;
+  margin-bottom: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 2.8em;
+}
+
+/* META INFORMAÇÕES ORGANIZADAS */
+.issue-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f3f4;
+  margin-top: auto;
+}
+
+.timer-duration {
+  color: #28a745;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.timer-user {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* STATUS BADGE POSICIONADO */
+.issue-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.status-badge {
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.ok {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.attention {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.long {
+  background: #fde2e4;
+  color: #721c24;
+}
+
+.status-badge.critical {
+  background: #f8d7da;
+  color: #721c24;
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.7; }
+}
+
+/* RESPONSIVIDADE */
+@media (max-width: 768px) {
+  .active-issues-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .issue-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .issue-status {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-top: 8px;
+  }
+}
+
+/* DARK MODE */
+@media (prefers-color-scheme: dark) {
+  .active-issue-card {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+
+  .issue-title {
+    color: #e2e8f0;
+  }
+
+  .active-issues-section {
+    background: #1a202c;
+    border-color: #2d3748;
+  }
+}
+
+/* Widget Container para manter compatibilidade */
 .widget-container.timer-analytics {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
   background-color: #1a1a1a !important;
@@ -42,224 +250,6 @@
   font-size: 18px !important;
   font-weight: 600 !important;
   color: #ffffff !important;
-}
-
-
-
-.widget-container .control-select {
-  padding: 4px 8px !important;
-  border: 1px solid #404040 !important;
-  border-radius: 4px !important;
-  background-color: #3a3a3a !important;
-  color: #ffffff !important;
-  font-size: 12px !important;
-  cursor: pointer !important;
-  transition: border-color 0.2s !important;
-}
-
-.widget-container .control-select:hover {
-  border-color: #007acc !important;
-}
-
-/* Loading states for filters */
-.widget-container .control-select.processing {
-  opacity: 0.7 !important;
-  cursor: not-allowed !important;
-  background-color: #2a2a2a !important;
-  border-color: #007acc !important;
-  position: relative !important;
-}
-
-.widget-container .control-select.processing::after {
-  content: '' !important;
-  position: absolute !important;
-  right: 8px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  width: 12px !important;
-  height: 12px !important;
-  border: 2px solid #007acc !important;
-  border-top: 2px solid transparent !important;
-  border-radius: 50% !important;
-  animation: spin 1s linear infinite !important;
-  pointer-events: none !important;
-}
-
-.widget-container .processing-indicator {
-  display: flex !important;
-  align-items: center !important;
-  gap: 6px !important;
-  color: #007acc !important;
-  font-size: 11px !important;
-  padding: 4px 8px !important;
-  background: rgba(0, 122, 204, 0.1) !important;
-  border-radius: 4px !important;
-  border: 1px solid rgba(0, 122, 204, 0.3) !important;
-  white-space: nowrap !important;
-}
-
-.widget-container .spinner {
-  animation: spin 1s linear infinite !important;
-  font-size: 12px !important;
-  display: inline-block !important;
-}
-
-/* Optimized Components */
-.widget-container .skeleton-container {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
-  gap: 12px !important;
-  padding: 16px 0 !important;
-}
-
-.widget-container .skeleton-card {
-  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%) !important;
-  background-size: 200% 100% !important;
-  animation: shimmer 1.5s infinite linear !important;
-  border-radius: 8px !important;
-  padding: 16px !important;
-  height: 120px !important;
-  will-change: background-position !important;
-}
-
-.widget-container .skeleton-line {
-  height: 12px !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 4px !important;
-  margin-bottom: 8px !important;
-}
-
-.widget-container .skeleton-title {
-  width: 70% !important;
-  height: 16px !important;
-}
-
-.widget-container .skeleton-subtitle {
-  width: 50% !important;
-}
-
-.widget-container .skeleton-duration {
-  width: 30% !important;
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-/* Progress Indicator */
-.widget-container .progress-container {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 4px !important;
-  min-width: 120px !important;
-}
-
-.widget-container .progress-bar {
-  width: 100% !important;
-  height: 4px !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 2px !important;
-  overflow: hidden !important;
-}
-
-.widget-container .progress-fill {
-  height: 100% !important;
-  background: linear-gradient(90deg, #007acc, #0056b3) !important;
-  transition: width 0.2s ease !important;
-  border-radius: 2px !important;
-}
-
-.widget-container .progress-text {
-  font-size: 10px !important;
-  color: #007acc !important;
-  font-weight: 500 !important;
-  text-align: center !important;
-}
-
-/* Virtualized List */
-.widget-container .virtualized-timer-list {
-  max-height: 800px !important;
-  overflow-y: auto !important;
-  scroll-behavior: smooth !important;
-  -webkit-overflow-scrolling: touch !important;
-  contain: layout style paint !important;
-}
-
-.widget-container .timer-grid-optimized {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
-  gap: 12px !important;
-  padding: 0 !important;
-}
-
-.widget-container .load-more-trigger {
-  padding: 20px !important;
-  text-align: center !important;
-}
-
-.widget-container .load-more-btn {
-  background: linear-gradient(135deg, #007acc 0%, #0056b3 100%) !important;
-  color: white !important;
-  border: none !important;
-  padding: 12px 24px !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  transition: all 0.2s ease !important;
-  box-shadow: 0 2px 4px rgba(0, 122, 204, 0.2) !important;
-}
-
-.widget-container .load-more-btn:hover {
-  background: linear-gradient(135deg, #0056b3 0%, #004085 100%) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 8px rgba(0, 122, 204, 0.3) !important;
-}
-
-.widget-container .empty-state-optimized {
-  text-align: center !important;
-  padding: 60px 20px !important;
-  color: #888888 !important;
-}
-
-.widget-container .empty-state-optimized .empty-icon {
-  font-size: 48px !important;
-  margin-bottom: 16px !important;
-  opacity: 0.7 !important;
-}
-
-.widget-container .empty-state-optimized p {
-  font-size: 16px !important;
-  margin: 0 !important;
-}
-
-/* Section Header */
-.widget-container .section-header {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  margin-bottom: 16px !important;
-  padding-bottom: 8px !important;
-  border-bottom: 2px solid #007acc !important;
-}
-
-.widget-container .results-summary {
-  font-size: 12px !important;
-  color: #888888 !important;
-  font-weight: 500 !important;
-}
-
-/* Hardware Acceleration */
-.widget-container .timer-grid-optimized .active-issue-card {
-  transform: translateZ(0) !important;
-  backface-visibility: hidden !important;
-  will-change: transform !important;
-}
-
-.widget-container .virtualized-timer-list {
-  transform: translateZ(0) !important;
-  contain: strict !important;
 }
 
 .widget-container .refresh-button {
@@ -348,12 +338,13 @@
   margin-top: 4px !important;
 }
 
-/* Active Issues Section */
+/* Active Issues Section - Widget Override */
 .widget-container .active-issues-section {
   margin: 16px !important;
-  background-color: transparent !important;
-  border-radius: 0 !important;
-  border: none !important;
+  padding: 20px !important;
+  background-color: #2d2d2d !important;
+  border-radius: 8px !important;
+  border: 1px solid #404040 !important;
   overflow: hidden !important;
 }
 
@@ -367,25 +358,33 @@
   color: #ffffff !important;
 }
 
-/* Active Issues Grid */
+.widget-container .active-issues-info {
+  margin-bottom: 20px !important;
+  font-size: 13px !important;
+  color: #888888 !important;
+  text-align: right !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid #404040 !important;
+}
+
+/* Active Issues Grid - Widget Override */
 .widget-container .active-issues-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
-  gap: 12px !important;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  gap: 16px !important;
   padding: 0 !important;
 }
 
 .widget-container .active-issue-card {
-  background-color: #2d2d2d !important;
-  border: 2px solid #404040 !important;
+  background-color: #3a3a3a !important;
+  border: 1px solid #4a5568 !important;
   border-radius: 8px !important;
   padding: 16px !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  min-height: 160px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.2s ease !important;
+  display: block !important;
   position: relative !important;
+  min-height: 120px !important;
 }
 
 .widget-container .active-issue-card:hover {
@@ -394,262 +393,133 @@
   transform: translateY(-2px) !important;
 }
 
-.widget-container .issue-content {
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
 .widget-container .issue-header {
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
-  margin-bottom: 8px !important;
+  margin-bottom: 12px !important;
+  gap: 8px !important;
 }
 
-/* Clickable Issue Links */
-.widget-container .issue-link {
+.widget-container .issue-id {
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
   color: #007acc !important;
   text-decoration: none !important;
-  font-weight: 600 !important;
-  font-size: 14px !important;
-  font-family: 'Monaco', 'Menlo', 'Consolas', monospace !important;
-  transition: all 0.2s ease !important;
-  border-radius: 4px !important;
-  padding: 2px 6px !important;
-  background: rgba(0, 122, 204, 0.1) !important;
-  cursor: pointer !important;
-  display: inline-block !important;
-}
-
-.widget-container .issue-link:hover {
   background: rgba(0, 122, 204, 0.2) !important;
-  text-decoration: none !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 2px 4px rgba(0, 122, 204, 0.3) !important;
-  color: #0056b3 !important;
-}
-
-.widget-container .issue-link:active {
-  transform: translateY(0) !important;
-}
-
-/* Project Badges */
-.widget-container .project-badge {
-  display: inline-block !important;
   padding: 4px 8px !important;
-  border-radius: 12px !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(0, 122, 204, 0.3) !important;
+}
+
+.widget-container .issue-id:hover {
+  background: rgba(0, 122, 204, 0.3) !important;
+  text-decoration: none !important;
+}
+
+.widget-container .issue-project {
+  background: #495057 !important;
+  color: white !important;
+  padding: 2px 6px !important;
+  border-radius: 3px !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  transition: all 0.2s ease !important;
 }
 
-.widget-container .project-tp {
-  background: #e3f2fd !important;
-  color: #1976d2 !important;
-  border: 1px solid #1976d2 !important;
-}
-
-.widget-container .project-bp {
-  background: #f3e5f5 !important;
-  color: #7b1fa2 !important;
-  border: 1px solid #7b1fa2 !important;
-}
-
-.widget-container .project-pbl {
-  background: #e8f5e8 !important;
-  color: #388e3c !important;
-  border: 1px solid #388e3c !important;
-}
-
-.widget-container .project-sbl {
-  background: #fff3e0 !important;
-  color: #f57c00 !important;
-  border: 1px solid #f57c00 !important;
-}
-
-/* Default project badge for unknown projects */
-.widget-container .project-badge:not(.project-tp):not(.project-bp):not(.project-pbl):not(.project-sbl) {
-  background-color: #3a3a3a !important;
-  color: #b3b3b3 !important;
-  border: 1px solid #404040 !important;
-}
-
-/* Clickable Issue Title */
-.widget-container .clickable-title {
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  color: #ffffff !important;
-  margin-bottom: 8px !important;
+.widget-container .issue-title {
+  font-size: 13px !important;
+  color: #e2e8f0 !important;
+  margin-bottom: 12px !important;
   line-height: 1.4 !important;
+  font-weight: 500 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   display: -webkit-box !important;
   -webkit-line-clamp: 2 !important;
   -webkit-box-orient: vertical !important;
-  overflow: hidden !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-  border-radius: 4px !important;
-  padding: 4px !important;
-}
-
-.widget-container .clickable-title:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #007acc !important;
-  transform: translateX(2px) !important;
-}
-
-/* Tooltip Styles */
-.widget-container .tooltip-container {
-  position: relative !important;
-  display: inline-block !important;
-  width: 100% !important;
-}
-
-.widget-container .tooltip-content {
-  position: absolute !important;
-  top: -10px !important;
-  left: 50% !important;
-  transform: translateX(-50%) translateY(-100%) !important;
-  background: #2d2d2d !important;
-  border: 1px solid #007acc !important;
-  border-radius: 8px !important;
-  padding: 12px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
-  z-index: 1000 !important;
-  min-width: 280px !important;
-  max-width: 320px !important;
-  pointer-events: none !important;
-  opacity: 0 !important;
-  animation: tooltipFadeIn 0.2s ease-out forwards !important;
-}
-
-.widget-container .tooltip-header {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  margin-bottom: 8px !important;
-  padding-bottom: 8px !important;
-  border-bottom: 1px solid #404040 !important;
-}
-
-.widget-container .tooltip-header strong {
-  color: #007acc !important;
-  font-family: 'Monaco', 'Menlo', 'Consolas', monospace !important;
-}
-
-.widget-container .tooltip-body {
-  font-size: 12px !important;
-  line-height: 1.4 !important;
-}
-
-.widget-container .tooltip-body p {
-  margin: 4px 0 !important;
-  color: #ffffff !important;
-}
-
-.widget-container .tooltip-body strong {
-  color: #b3b3b3 !important;
-  font-weight: 600 !important;
-}
-
-@keyframes tooltipFadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-100%) translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(-100%);
-  }
+  min-height: 2.8em !important;
 }
 
 .widget-container .issue-meta {
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
-  margin-bottom: 8px !important;
   font-size: 12px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid #4a5568 !important;
+  margin-top: auto !important;
 }
 
 .widget-container .timer-duration {
   color: #28a745 !important;
   font-weight: 600 !important;
+  font-family: monospace !important;
 }
 
 .widget-container .timer-user {
-  color: #888888 !important;
+  color: #a0aec0 !important;
   font-weight: 500 !important;
 }
 
 .widget-container .issue-status {
-  display: flex !important;
-  justify-content: flex-end !important;
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
 }
 
 .widget-container .status-badge {
-  padding: 4px 8px !important;
-  border-radius: 12px !important;
-  font-size: 11px !important;
+  padding: 3px 6px !important;
+  border-radius: 3px !important;
+  font-size: 10px !important;
   font-weight: 600 !important;
-  text-transform: capitalize !important;
-  background-color: #6c757d !important;
-  color: #ffffff !important;
-  border: 1px solid #495057 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
 }
 
 .widget-container .status-badge.ok {
-  background-color: #28a745 !important;
-  color: #ffffff !important;
-  border-color: #1e7e34 !important;
+  background: #d4edda !important;
+  color: #155724 !important;
 }
 
 .widget-container .status-badge.attention {
-  background-color: #ffc107 !important;
-  color: #000000 !important;
-  border-color: #d39e00 !important;
+  background: #fff3cd !important;
+  color: #856404 !important;
 }
 
 .widget-container .status-badge.long {
-  background-color: #fd7e14 !important;
-  color: #ffffff !important;
-  border-color: #e55a00 !important;
+  background: #fde2e4 !important;
+  color: #721c24 !important;
 }
 
 .widget-container .status-badge.critical {
-  background-color: #dc3545 !important;
-  color: #ffffff !important;
-  border-color: #c82333 !important;
+  background: #f8d7da !important;
+  color: #721c24 !important;
+  animation: blink 2s infinite !important;
 }
 
-.widget-container .status-badge.overtime {
-  background-color: #6f42c1 !important;
-  color: #ffffff !important;
-  border-color: #59359a !important;
-}
-
-/* Timer Actions - Cleanup completed */
-.widget-container .no-active-issues {
-  grid-column: 1 / -1 !important;
+.widget-container .show-more {
   text-align: center !important;
-  padding: 40px 20px !important;
-  color: #888888 !important;
+  margin-top: 16px !important;
 }
 
-.widget-container .empty-icon {
-  font-size: 48px !important;
-  margin-bottom: 16px !important;
-  opacity: 0.5 !important;
+.widget-container .show-more-btn {
+  background: #007acc !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  transition: background-color 0.2s !important;
 }
 
-.widget-container .no-active-issues p {
-  margin: 0 !important;
-  font-size: 14px !important;
-  color: #888888 !important;
+.widget-container .show-more-btn:hover {
+  background: #0056b3 !important;
 }
 
-/* Charts Grid */
+/* Charts and other sections */
 .widget-container .charts-grid {
   display: grid !important;
   grid-template-columns: 2fr 1fr !important;
@@ -767,7 +637,7 @@
   justify-content: space-between !important;
   align-items: center !important;
   padding: 12px 16px !important;
-  border-top: 1px solid #dee2e6 !important;
+  border-top: 1px solid #404040 !important;
   background-color: #2d2d2d !important;
   font-size: 11px !important;
   color: #888888 !important;
@@ -799,18 +669,6 @@
   border-top: 3px solid #007acc !important;
   border-radius: 50% !important;
   animation: spin 1s linear infinite !important;
-}
-
-.widget-container .loading-container span {
-  font-size: 16px !important;
-  font-weight: 500 !important;
-  color: #b3b3b3 !important;
-}
-
-.widget-container .loading-container small {
-  font-size: 12px !important;
-  color: #888888 !important;
-  font-style: italic !important;
 }
 
 .widget-container .error-container {
@@ -902,7 +760,6 @@
     gap: 12px !important;
   }
 }
-}
 
 @media (max-width: 768px) {
   .widget-container .header-filters {
@@ -915,8 +772,22 @@
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
   }
-}
 
+  .widget-container .active-issues-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .widget-container .issue-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .widget-container .issue-status {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    margin-top: 8px !important;
+  }
 
   .widget-container .metric-card {
     padding: 12px !important;
@@ -941,145 +812,3 @@
     text-align: center !important;
   }
 }
-
-/* CSS Reset and Isolation for YouTrack widget */
-.widget-container {
-  /* Reset all inherited styles */
-  all: initial;
-
-  /* Essential widget styles */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-  font-size: 14px !important;
-  line-height: 1.4 !important;
-  color: #ffffff !important;
-  background-color: #1a1a1a !important;
-
-  /* Layout */
-  display: block !important;
-  position: relative !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 600px !important;
-  overflow: hidden !important;
-
-  /* Isolation */
-  isolation: isolate !important;
-  contain: layout style !important;
-
-  /* Remove any inherited margins/padding */
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-}
-
-/* Reset all child elements */
-.widget-container *,
-.widget-container *::before,
-.widget-container *::after {
-  /* Inherit essential properties from parent */
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-
-  /* Reset box model */
-  box-sizing: border-box !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  outline: 0 !important;
-
-  /* Reset positioning */
-  position: static !important;
-
-  /* Reset display (will be overridden by specific classes) */
-  display: block !important;
-
-  /* Reset colors and backgrounds */
-  background: transparent !important;
-  color: inherit !important;
-
-  /* Reset text properties */
-  text-decoration: none !important;
-  text-transform: none !important;
-  letter-spacing: normal !important;
-  word-spacing: normal !important;
-
-  /* Reset list styles */
-  list-style: none !important;
-
-  /* Reset form elements */
-  appearance: none !important;
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-
-  /* Reset animations */
-  animation: none !important;
-  transition: none !important;
-  transform: none !important;
-}
-
-/* Restore necessary display properties */
-.widget-container button {
-  display: inline-block !important;
-  cursor: pointer !important;
-}
-
-.widget-container select {
-  display: inline-block !important;
-  cursor: pointer !important;
-}
-
-.widget-container input {
-  display: inline-block !important;
-}
-
-.widget-container a {
-  display: inline !important;
-  cursor: pointer !important;
-}
-
-.widget-container span {
-  display: inline !important;
-}
-
-.widget-container div {
-  display: block !important;
-}
-
-/* Flexbox containers */
-.widget-container .analytics-header,
-.widget-container .header-controls,
-.widget-container .metrics-grid,
-.widget-container .charts-grid,
-.widget-container .breakdowns-grid,
-.widget-container .breakdown-list,
-.widget-container .breakdown-item,
-.widget-container .breakdown-info,
-.widget-container .breakdown-metrics,
-.widget-container .analytics-footer,
-.widget-container .loading-container,
-.widget-container .error-container,
-.widget-container .empty-state,
-.widget-container .metric-card,
-/* Grid containers */
-.widget-container .metrics-grid,
-.widget-container .charts-grid,
-.widget-container .breakdowns-grid,
-.widget-container .active-issues-grid {
-  display: grid !important;
-}
-
-/* Specific positioning for buttons */
-.widget-container button {
-  position: relative !important;
-}
-
-/* Specific animation allowances */
-.widget-container .loader {
-  animation: spin 1s linear infinite !important;
-}
-
-.widget-container .loading-spinner {
-  animation: spin 1s linear infinite !important;
-}
-
