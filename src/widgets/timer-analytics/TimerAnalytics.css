@@ -104,6 +104,164 @@
   display: inline-block !important;
 }
 
+/* Optimized Components */
+.widget-container .skeleton-container {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+  gap: 12px !important;
+  padding: 16px 0 !important;
+}
+
+.widget-container .skeleton-card {
+  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 1.5s infinite linear !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  height: 120px !important;
+  will-change: background-position !important;
+}
+
+.widget-container .skeleton-line {
+  height: 12px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
+  margin-bottom: 8px !important;
+}
+
+.widget-container .skeleton-title {
+  width: 70% !important;
+  height: 16px !important;
+}
+
+.widget-container .skeleton-subtitle {
+  width: 50% !important;
+}
+
+.widget-container .skeleton-duration {
+  width: 30% !important;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Progress Indicator */
+.widget-container .progress-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  min-width: 120px !important;
+}
+
+.widget-container .progress-bar {
+  width: 100% !important;
+  height: 4px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 2px !important;
+  overflow: hidden !important;
+}
+
+.widget-container .progress-fill {
+  height: 100% !important;
+  background: linear-gradient(90deg, #007acc, #0056b3) !important;
+  transition: width 0.2s ease !important;
+  border-radius: 2px !important;
+}
+
+.widget-container .progress-text {
+  font-size: 10px !important;
+  color: #007acc !important;
+  font-weight: 500 !important;
+  text-align: center !important;
+}
+
+/* Virtualized List */
+.widget-container .virtualized-timer-list {
+  max-height: 800px !important;
+  overflow-y: auto !important;
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
+  contain: layout style paint !important;
+}
+
+.widget-container .timer-grid-optimized {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+  gap: 12px !important;
+  padding: 0 !important;
+}
+
+.widget-container .load-more-trigger {
+  padding: 20px !important;
+  text-align: center !important;
+}
+
+.widget-container .load-more-btn {
+  background: linear-gradient(135deg, #007acc 0%, #0056b3 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 24px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 4px rgba(0, 122, 204, 0.2) !important;
+}
+
+.widget-container .load-more-btn:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 122, 204, 0.3) !important;
+}
+
+.widget-container .empty-state-optimized {
+  text-align: center !important;
+  padding: 60px 20px !important;
+  color: #888888 !important;
+}
+
+.widget-container .empty-state-optimized .empty-icon {
+  font-size: 48px !important;
+  margin-bottom: 16px !important;
+  opacity: 0.7 !important;
+}
+
+.widget-container .empty-state-optimized p {
+  font-size: 16px !important;
+  margin: 0 !important;
+}
+
+/* Section Header */
+.widget-container .section-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 16px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 2px solid #007acc !important;
+}
+
+.widget-container .results-summary {
+  font-size: 12px !important;
+  color: #888888 !important;
+  font-weight: 500 !important;
+}
+
+/* Hardware Acceleration */
+.widget-container .timer-grid-optimized .active-issue-card {
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
+  will-change: transform !important;
+}
+
+.widget-container .virtualized-timer-list {
+  transform: translateZ(0) !important;
+  contain: strict !important;
+}
+
 .widget-container .refresh-button {
   background-color: #007acc !important;
   color: white !important;

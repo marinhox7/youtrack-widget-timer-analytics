@@ -3,18 +3,15 @@
  * Provides comprehensive analytics and insights for timer data
  */
 
-import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
-import { Chart as ChartJS, registerables } from 'chart.js';
-import { Bar, Line, Doughnut } from 'react-chartjs-2';
-import { format, subDays, subHours, isWithinInterval } from 'date-fns';
+import React, { useState, useEffect, useCallback, useMemo, memo, useRef, useTransition } from 'react';
 import { debounce } from 'throttle-debounce';
-import { YouTrackAPI, processTimerData, calculateStats, formatDuration } from '../../services/api';
-import { TimerEntry, TimerStats, ProjectTimerStats, UserTimerStats } from '../../types';
+import { YouTrackAPI, processTimerData, formatDuration } from '../../services/api';
+import { TimerEntry } from '../../types';
 import { Logger } from '../../services/logger';
+import { useVirtualizedData } from '../../hooks/useVirtualizedData';
+import { useInfiniteScroll } from '../../hooks/useIntersectionObserver';
 import './TimerAnalytics.css';
 
-// Register Chart.js components
-ChartJS.register(...registerables);
 
 // Memoized Timer Card Component with clickable links
 const TimerCard = memo(({ timer }: { timer: TimerEntry }) => {
@@ -73,6 +70,111 @@ const TimerCard = memo(({ timer }: { timer: TimerEntry }) => {
 
 TimerCard.displayName = 'TimerCard';
 
+// Ultra-fast select component with instant feedback
+const FastSelect = memo<{
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  loading?: boolean;
+  disabled?: boolean;
+}>(({ value, onChange, options, loading = false, disabled = false }) => (
+  <select
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className={`control-select ${loading ? 'processing' : ''}`}
+    disabled={disabled || loading}
+  >
+    {options.map(option => (
+      <option key={option.value} value={option.value}>
+        {option.label}
+      </option>
+    ))}
+  </select>
+));
+
+FastSelect.displayName = 'FastSelect';
+
+// Skeleton loader for instant feedback
+const SkeletonLoader = memo(() => (
+  <div className="skeleton-container">
+    {Array.from({ length: 8 }, (_, i) => (
+      <div key={i} className="skeleton-card">
+        <div className="skeleton-line skeleton-title"></div>
+        <div className="skeleton-line skeleton-subtitle"></div>
+        <div className="skeleton-line skeleton-duration"></div>
+      </div>
+    ))}
+  </div>
+));
+
+SkeletonLoader.displayName = 'SkeletonLoader';
+
+// Progress indicator
+const ProgressIndicator = memo<{ progress: number; isVisible: boolean }>(
+  ({ progress, isVisible }) => {
+    if (!isVisible) return null;
+
+    return (
+      <div className="progress-container">
+        <div className="progress-bar">
+          <div
+            className="progress-fill"
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          />
+        </div>
+        <span className="progress-text">
+          Processando... {Math.round(progress)}%
+        </span>
+      </div>
+    );
+  }
+);
+
+ProgressIndicator.displayName = 'ProgressIndicator';
+
+// Virtualized list component
+const VirtualizedTimerList = memo<{
+  items: TimerEntry[];
+  totalCount: number;
+  onLoadMore: () => void;
+  loading: boolean;
+}>(({ items, totalCount, onLoadMore, loading }) => {
+  const loadMoreRef = useInfiniteScroll(onLoadMore, {
+    enabled: !loading && items.length < totalCount
+  }) as React.RefObject<HTMLDivElement>;
+
+  return (
+    <div className="virtualized-timer-list">
+      <div className="timer-grid-optimized">
+        {items.map((timer, index) => (
+          <Tooltip key={`${timer.issueId}-${timer.username}-${index}`} timer={timer}>
+            <TimerCard timer={timer} />
+          </Tooltip>
+        ))}
+      </div>
+
+      {loading && <SkeletonLoader />}
+
+      {items.length < totalCount && !loading && (
+        <div ref={loadMoreRef} className="load-more-trigger">
+          <button onClick={onLoadMore} className="load-more-btn">
+            Carregar mais ({totalCount - items.length} restantes)
+          </button>
+        </div>
+      )}
+
+      {items.length === 0 && !loading && (
+        <div className="empty-state-optimized">
+          <div className="empty-icon">🔍</div>
+          <p>Nenhum timer encontrado com os filtros atuais</p>
+        </div>
+      )}
+    </div>
+  );
+});
+
+VirtualizedTimerList.displayName = 'VirtualizedTimerList';
+
 // Tooltip Component
 const Tooltip = memo(({ timer, children }: { timer: TimerEntry; children: React.ReactNode }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -122,15 +224,6 @@ interface TimerAnalyticsProps {
   timeRange?: 'day' | 'week' | 'month';
 }
 
-interface AnalyticsData {
-  timers: TimerEntry[];
-  stats: TimerStats;
-  trends: {
-    hourly: { hour: number; count: number; avgDuration: number }[];
-    daily: { date: string; count: number; avgDuration: number }[];
-    weekly: { week: string; count: number; avgDuration: number }[];
-  };
-}
 
 const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   host,
@@ -140,63 +233,105 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   showTrends = true,
   timeRange = 'day'
 }) => {
-  const [data, setData] = useState<AnalyticsData | null>(null);
+  // Raw data state
+  const [rawTimers, setRawTimers] = useState<TimerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMetric, setSelectedMetric] = useState<'count' | 'duration' | 'average'>('count');
-  const [selectedTimeRange, setSelectedTimeRange] = useState(timeRange);
-  const [selectedProject, setSelectedProject] = useState<string>('all');
 
-  // Performance optimization states
-  const [isProcessing, setIsProcessing] = useState(false);
-  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Filter states
+  const [selectedFilters, setSelectedFilters] = useState({
+    timeRange: timeRange,
+    metric: 'count' as 'count' | 'duration' | 'average',
+    project: 'all',
+    status: 'all',
+    user: 'all'
+  });
+
+  // React 18 concurrent features for smooth UI
+  const [isPending, startTransition] = useTransition();
+  const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const logger = Logger.getLogger('TimerAnalytics');
   const api = new YouTrackAPI(host);
 
-  // Debounced filter update functions
-  const debouncedTimeRangeUpdate = useMemo(
-    () => debounce(300, (newTimeRange: 'day' | 'week' | 'month') => {
-      setSelectedTimeRange(newTimeRange);
-      setIsProcessing(false);
-    }),
-    []
+  // High-performance filter function
+  const filterFunction = useCallback((timer: TimerEntry, filter: any) => {
+    if (!filter) return true;
+
+    // Project filter
+    if (filter.project && filter.project !== 'all' && timer.projectShortName !== filter.project) {
+      return false;
+    }
+
+    // Status filter
+    if (filter.status && filter.status !== 'all' && timer.status !== filter.status) {
+      return false;
+    }
+
+    // User filter
+    if (filter.user && filter.user !== 'all' && timer.username !== filter.user) {
+      return false;
+    }
+
+    // Time range filter (based on duration)
+    if (filter.timeRange && filter.timeRange !== 'day') {
+      const hours = timer.elapsedMs / (60 * 60 * 1000);
+      switch (filter.timeRange) {
+        case 'short':
+          if (hours >= 2) return false;
+          break;
+        case 'medium':
+          if (hours < 2 || hours >= 8) return false;
+          break;
+        case 'long':
+          if (hours < 8) return false;
+          break;
+      }
+    }
+
+    return true;
+  }, []);
+
+  // Virtualized data hook with Web Worker support
+  const {
+    visibleItems,
+    totalCount,
+    isLoading: isProcessing,
+    progress,
+    loadMore,
+    filterItems,
+    sortItems,
+    scrollToTop
+  } = useVirtualizedData<TimerEntry>(
+    rawTimers,
+    filterFunction,
+    {
+      chunkSize: 50,
+      initialChunkSize: 25,
+      enableWorker: true
+    }
   );
 
-  const debouncedMetricUpdate = useMemo(
-    () => debounce(300, (newMetric: 'count' | 'duration' | 'average') => {
-      setSelectedMetric(newMetric);
-      setIsProcessing(false);
-    }),
-    []
-  );
-
-  // Optimized filter change handlers
+  // INSTANT filter response with minimal debounce
   const handleFilterChange = useCallback((filterType: string, value: string) => {
-    setIsProcessing(true);
-
     // Clear previous timeout
-    if (processingTimeoutRef.current) {
-      clearTimeout(processingTimeoutRef.current);
+    if (filterTimeoutRef.current) {
+      clearTimeout(filterTimeoutRef.current);
     }
 
-    // Apply filter with debounce
-    switch (filterType) {
-      case 'timeRange':
-        debouncedTimeRangeUpdate(value as 'day' | 'week' | 'month');
-        break;
-      case 'metric':
-        debouncedMetricUpdate(value as 'count' | 'duration' | 'average');
-        break;
-    }
+    // Update UI state immediately (optimistic update)
+    const newFilters = { ...selectedFilters, [filterType]: value };
+    setSelectedFilters(newFilters);
 
-    // Fallback timeout to clear processing state
-    processingTimeoutRef.current = setTimeout(() => {
-      setIsProcessing(false);
-    }, 1000);
-  }, [debouncedTimeRangeUpdate, debouncedMetricUpdate]);
+    // Debounce the actual filtering with reduced delay
+    filterTimeoutRef.current = setTimeout(() => {
+      startTransition(() => {
+        filterItems(newFilters);
+      });
+    }, 150); // Reduced from 300ms to 150ms
+  }, [selectedFilters, filterItems, startTransition]);
 
-  // Memoized handlers
+  // Optimized handlers with instant UI feedback
   const handleTimeRangeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     handleFilterChange('timeRange', e.target.value);
   }, [handleFilterChange]);
@@ -205,24 +340,34 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     handleFilterChange('metric', e.target.value);
   }, [handleFilterChange]);
 
+  const handleProjectChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    handleFilterChange('project', e.target.value);
+  }, [handleFilterChange]);
+
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    handleFilterChange('status', e.target.value);
+  }, [handleFilterChange]);
+
   const fetchAnalyticsData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Reduce limit to decrease payload and parsing time.
-      // This keeps analytics responsive while still covering typical active timers volume.
+      // Fetch raw data without immediate filtering
       const issues = await api.fetchIssuesWithTimers({
-        projectId: selectedProject === 'all' ? undefined : selectedProject,
-        limit: 500
+        projectId: selectedFilters.project === 'all' ? undefined : selectedFilters.project,
+        limit: 1000 // Increased limit since we're virtualizing
       });
 
       const timers = processTimerData(issues);
-      const stats = calculateStats(timers);
-      const trends = calculateTrendsOptimized(timers, selectedTimeRange);
 
-      setData({ timers, stats, trends });
-      logger.warn('Analytics data updated', { timerCount: timers.length, projectCount: stats.projectBreakdown.length });
+      // Set raw data - filtering will be handled by virtualized hook
+      setRawTimers(timers);
+
+      logger.warn('Raw timer data loaded', {
+        timerCount: timers.length,
+        projects: [...new Set(timers.map(t => t.projectShortName))].length
+      });
 
     } catch (err) {
       logger.error('Failed to fetch analytics data', err as Error);
@@ -230,7 +375,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     } finally {
       setLoading(false);
     }
-  }, [api, selectedProject, selectedTimeRange]);
+  }, [api, selectedFilters.project]);
 
 
 
@@ -244,198 +389,30 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current);
+      if (filterTimeoutRef.current) {
+        clearTimeout(filterTimeoutRef.current);
       }
     };
   }, []);
 
 
-  // Optimized trends calculation with performance monitoring
-  const calculateTrendsOptimized = useCallback((timers: TimerEntry[], range: string) => {
-    console.time('calculateTrends');
-
-    // Early return for empty data
-    if (!timers.length) {
-      console.timeEnd('calculateTrends');
-      return { hourly: [], daily: [], weekly: [] };
-    }
-
-    const now = new Date();
-    const nowMs = now.getTime();
-    const buckets = range === "day" ? 24 : (range === "week" ? 7 : 30);
-    const intervalMs = range === 'day' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
-
-    // Pre-compute time boundaries for efficiency
-    const boundaries = Array.from({ length: buckets }, (_, i) => {
-      const start = nowMs - ((buckets - i) * intervalMs);
-      const end = start + intervalMs;
-      return { start, end, index: i };
-    });
-
-    // Initialize result arrays
-    const result = range === 'day'
-      ? { hourly: boundaries.map(b => ({ hour: new Date(b.start).getHours(), count: 0, avgDuration: 0, totalDuration: 0 })), daily: [], weekly: [] }
-      : { hourly: [], daily: boundaries.map(b => ({ date: format(new Date(b.start), 'MMM dd'), count: 0, avgDuration: 0, totalDuration: 0 })), weekly: [] };
-
-    // Single pass through timers with optimized bucketing
-    const targetArray = range === 'day' ? result.hourly : result.daily;
-
-    for (const timer of timers) {
-      const timerStartMs = timer.startTime;
-
-      // Skip timers outside time range
-      if (timerStartMs < boundaries[0].start || timerStartMs >= nowMs) continue;
-
-      // Binary search for bucket (more efficient than linear search)
-      let bucketIndex = -1;
-      for (let i = 0; i < boundaries.length; i++) {
-        if (timerStartMs >= boundaries[i].start && timerStartMs < boundaries[i].end) {
-          bucketIndex = i;
-          break;
-        }
-      }
-
-      if (bucketIndex !== -1) {
-        const bucket = targetArray[bucketIndex];
-        bucket.count += 1;
-        bucket.totalDuration += timer.elapsedMs;
-        bucket.avgDuration = bucket.totalDuration / bucket.count;
-      }
-    }
-
-    console.timeEnd('calculateTrends');
-    return result;
-  }, []);
-
-  // Chart options (memoized to avoid re-renders)
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      tooltip: {
-        callbacks: {
-          label: (context: any) => {
-            if (selectedMetric === 'duration' || selectedMetric === 'average') {
-              return `${context.dataset.label}: ${formatDuration(context.parsed.y)}`;
-            }
-            return `${context.dataset.label}: ${context.parsed.y}`;
-          }
-        }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: (value: any) => {
-            if (selectedMetric === 'duration' || selectedMetric === 'average') {
-              return formatDuration(value, { precision: 'low' });
-            }
-            return value;
-          }
-        }
-      }
-    }
-  }), [selectedMetric]);
-
-  // Memoized and optimized chart data processing
-  const trendsChartData = useMemo(() => {
-    if (!data || isProcessing) return null;
-
-    console.time('chartDataProcessing');
-
-    const trendsData = selectedTimeRange === 'day' ? data.trends.hourly : data.trends.daily;
-
-    // Early return if no data
-    if (!trendsData.length) {
-      console.timeEnd('chartDataProcessing');
-      return null;
-    }
-
-    const labels = selectedTimeRange === 'day'
-      ? trendsData.map(d => `${d.hour}:00`)
-      : trendsData.map(d => d.date);
-
-    const values = trendsData.map(d => {
-      switch (selectedMetric) {
-        case 'count': return d.count;
-        case 'duration': return d.totalDuration || (d.count * d.avgDuration);
-        case 'average': return d.avgDuration;
-        default: return d.count;
-      }
-    });
-
-    console.timeEnd('chartDataProcessing');
+  // Quick stats calculation from visible items
+  const quickStats = useMemo(() => {
+    const totalUsers = new Set(visibleItems.map(t => t.username)).size;
+    const totalTimers = visibleItems.length;
+    const criticalTimers = visibleItems.filter(t => t.status === 'critical').length;
+    const totalTime = visibleItems.reduce((sum, t) => sum + t.elapsedMs, 0);
+    const averageTime = totalTimers > 0 ? totalTime / totalTimers : 0;
 
     return {
-      labels,
-      datasets: [
-        {
-          label: selectedMetric === 'count' ? 'Timer Count' :
-                 selectedMetric === 'duration' ? 'Total Duration' : 'Average Duration',
-          data: values,
-          backgroundColor: 'rgba(54, 162, 235, 0.5)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 2,
-          fill: true
-        }
-      ]
+      totalUsers,
+      totalTimers,
+      criticalTimers,
+      averageTime
     };
-  }, [data, selectedTimeRange, selectedMetric, isProcessing]);
+  }, [visibleItems]);
 
-  const projectsChartData = useMemo(() => {
-    if (!data) return null;
-
-    const projects = data.stats.projectBreakdown.slice(0, 10); // Top 10 projects
-
-    return {
-      labels: projects.map(p => p.projectShortName),
-      datasets: [
-        {
-          label: 'Active Timers',
-          data: projects.map(p => p.timerCount),
-          backgroundColor: [
-            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
-          ]
-        }
-      ]
-    };
-  }, [data]);
-
-  const statusDistributionData = useMemo(() => {
-    if (!data) return null;
-
-    const statusCounts = data.timers.reduce(
-      (acc, t) => {
-        acc[t.status] = (acc[t.status] || 0) as number + 1;
-        return acc;
-      },
-      { ok: 0, attention: 0, long: 0, critical: 0, overtime: 0 } as Record<string, number>
-    );
-
-    return {
-      labels: ['OK', 'Attention', 'Long', 'Critical', 'Overtime'],
-      datasets: [
-        {
-          data: [
-            statusCounts.ok,
-            statusCounts.attention,
-            statusCounts.long,
-            statusCounts.critical,
-            statusCounts.overtime
-          ],
-          backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#dc3545', '#6f42c1']
-        }
-      ]
-    };
-  }, [data]);
-
-  if (loading && !data) {
+  if (loading) {
     return (
       <div className="widget-container timer-analytics">
         <div className="analytics-header">
@@ -478,7 +455,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     );
   }
 
-  if (!data) {
+  if (rawTimers.length === 0 && !loading) {
     return (
       <div className="widget-container timer-analytics">
         <div className="empty-state">
@@ -497,36 +474,60 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
           <h2>📊 Timer Analytics</h2>
         </div>
         <div className="header-filters">
-          <select
-            value={selectedTimeRange}
-            onChange={handleTimeRangeChange}
-            className={`control-select ${isProcessing ? 'processing' : ''}`}
-            disabled={isProcessing}
-          >
-            <option value="day">Último Dia</option>
-            <option value="week">Última Semana</option>
-            <option value="month">Último Mês</option>
-          </select>
+          <FastSelect
+            value={selectedFilters.timeRange}
+            onChange={(value) => handleTimeRangeChange({ target: { value } } as any)}
+            options={[
+              { value: 'day', label: 'Último Dia' },
+              { value: 'week', label: 'Última Semana' },
+              { value: 'month', label: 'Último Mês' },
+              { value: 'short', label: 'Timers Curtos (<2h)' },
+              { value: 'medium', label: 'Timers Médios (2-8h)' },
+              { value: 'long', label: 'Timers Longos (>8h)' }
+            ]}
+            loading={isPending || isProcessing}
+          />
 
-          <select
-            value={selectedMetric}
-            onChange={handleMetricChange}
-            className={`control-select ${isProcessing ? 'processing' : ''}`}
-            disabled={isProcessing}
-          >
-            <option value="count">Contagem</option>
-            <option value="duration">Duração Total</option>
-            <option value="average">Duração Média</option>
-          </select>
+          <FastSelect
+            value={selectedFilters.metric}
+            onChange={(value) => handleMetricChange({ target: { value } } as any)}
+            options={[
+              { value: 'count', label: 'Contagem' },
+              { value: 'duration', label: 'Duração Total' },
+              { value: 'average', label: 'Duração Média' }
+            ]}
+            loading={isPending || isProcessing}
+          />
+
+          <FastSelect
+            value={selectedFilters.status}
+            onChange={(value) => handleStatusChange({ target: { value } } as any)}
+            options={[
+              { value: 'all', label: 'Todos Status' },
+              { value: 'ok', label: 'OK' },
+              { value: 'attention', label: 'Atenção' },
+              { value: 'long', label: 'Longo' },
+              { value: 'critical', label: 'Crítico' },
+              { value: 'overtime', label: 'Overtime' }
+            ]}
+            loading={isPending || isProcessing}
+          />
 
           <button onClick={fetchAnalyticsData} className="refresh-button" disabled={loading}>
             {loading ? '⟳' : '↻'} Atualizar
           </button>
 
-          {isProcessing && (
+          <ProgressIndicator progress={progress} isVisible={isProcessing && progress > 0} />
+
+          {(isPending || isProcessing) && (
             <div className="processing-indicator">
               <span className="spinner">⟳</span>
-              <span>Processando...</span>
+              <span>
+                {isProcessing
+                  ? `Filtrando ${totalCount} timers...`
+                  : 'Processando...'
+                }
+              </span>
             </div>
           )}
         </div>
@@ -537,7 +538,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         <div className="metric-card">
           <div className="metric-icon">👥</div>
           <div className="metric-content">
-            <div className="metric-value">{data.stats.totalUsers}</div>
+            <div className="metric-value">{quickStats.totalUsers}</div>
             <div className="metric-label">Usuários Ativos</div>
           </div>
         </div>
@@ -545,7 +546,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         <div className="metric-card">
           <div className="metric-icon">⏱️</div>
           <div className="metric-content">
-            <div className="metric-value">{data.stats.totalTimers}</div>
+            <div className="metric-value">{quickStats.totalTimers}</div>
             <div className="metric-label">Timers Ativos</div>
           </div>
         </div>
@@ -553,7 +554,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         <div className="metric-card critical">
           <div className="metric-icon">🚨</div>
           <div className="metric-content">
-            <div className="metric-value">{data.stats.criticalTimers}</div>
+            <div className="metric-value">{quickStats.criticalTimers}</div>
             <div className="metric-label">Críticos</div>
           </div>
         </div>
@@ -561,92 +562,91 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         <div className="metric-card">
           <div className="metric-icon">📊</div>
           <div className="metric-content">
-            <div className="metric-value">{formatDuration(data.stats.averageTimeMs, { precision: 'low' })}</div>
+            <div className="metric-value">{formatDuration(quickStats.averageTime, { precision: 'low' })}</div>
             <div className="metric-label">Tempo Médio</div>
           </div>
         </div>
       </div>
 
-      {/* Active Issues List */}
+      {/* Virtualized Timer List */}
       <div className="active-issues-section">
-        <h3>🔥 Issues com Timers Ativos</h3>
-        <div className="active-issues-grid">
-          {data.timers.length > 0 ? (
-            data.timers.map((timer, index) => (
-              <Tooltip key={`${timer.issueId}-${index}`} timer={timer}>
-                <TimerCard timer={timer} />
-              </Tooltip>
-            ))
-          ) : (
-            <div className="no-active-issues">
-              <div className="empty-icon">💤</div>
-              <p>Nenhum timer ativo no momento</p>
-            </div>
-          )}
+        <div className="section-header">
+          <h3>🔥 Issues com Timers Ativos</h3>
+          <div className="results-summary">
+            {isProcessing ? (
+              <span>Processando...</span>
+            ) : (
+              <span>
+                Mostrando {visibleItems.length} de {totalCount} timers
+                {totalCount !== rawTimers.length && ` (${rawTimers.length} total carregados)`}
+              </span>
+            )}
+          </div>
         </div>
+
+        <VirtualizedTimerList
+          items={visibleItems}
+          totalCount={totalCount}
+          onLoadMore={loadMore}
+          loading={isProcessing}
+        />
       </div>
 
-      {/* Charts Grid */}
-      <div className="charts-grid">
-        {/* Trends Chart */}
-        {showTrends && trendsChartData && (
-          <div className="chart-container">
-            <h3>Tendências de Timers</h3>
-            <div className="chart-wrapper">
-              <Line data={trendsChartData} options={chartOptions} />
-            </div>
-          </div>
-        )}
-
-        {/* Project Breakdown */}
-        {showProjectBreakdown && projectsChartData && (
-          <div className="chart-container">
-            <h3>Breakdown por Projeto</h3>
-            <div className="chart-wrapper">
-              <Bar data={projectsChartData} options={chartOptions} />
-            </div>
-          </div>
-        )}
-
+      {/* Quick Analytics Grid - Charts removed for performance */}
+      <div className="quick-analytics-grid">
         {/* Status Distribution */}
-        <div className="chart-container">
-          <h3>Distribuição por Status</h3>
-          <div className="chart-wrapper">
-            <Doughnut
-              data={statusDistributionData!}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'right' as const
-                  }
-                }
-              }}
-            />
+        <div className="analytics-container">
+          <h3>📊 Distribuição por Status</h3>
+          <div className="status-breakdown">
+            {Object.entries(
+              visibleItems.reduce((acc, timer) => {
+                acc[timer.status] = (acc[timer.status] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>)
+            ).map(([status, count]) => (
+              <div key={status} className={`status-item status-${status}`}>
+                <span className="status-label">{status.toUpperCase()}</span>
+                <span className="status-count">{count}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Detailed Breakdowns */}
-      <div className="breakdowns-grid">
+      {/* Live Statistics - Computed from visible items */}
+      <div className="live-stats-grid">
         {/* Top Projects */}
         {showProjectBreakdown && (
           <div className="breakdown-container">
-            <h3>Top Projetos</h3>
+            <h3>🏗️ Top Projetos (Filtrados)</h3>
             <div className="breakdown-list">
-              {data.stats.projectBreakdown.slice(0, 5).map((project: ProjectTimerStats) => (
-                <div key={project.projectId} className="breakdown-item">
-                  <div className="breakdown-info">
-                    <span className="breakdown-name">{project.projectShortName}</span>
-                    <span className="breakdown-detail">{project.users.length} usuários</span>
+              {Object.entries(
+                visibleItems.reduce((acc, timer) => {
+                  const project = timer.projectShortName;
+                  if (!acc[project]) {
+                    acc[project] = { count: 0, totalTime: 0, users: new Set() };
+                  }
+                  acc[project].count++;
+                  acc[project].totalTime += timer.elapsedMs;
+                  acc[project].users.add(timer.username);
+                  return acc;
+                }, {} as Record<string, { count: number; totalTime: number; users: Set<string> }>)
+              )
+                .sort(([,a], [,b]) => b.count - a.count)
+                .slice(0, 5)
+                .map(([project, stats]) => (
+                  <div key={project} className="breakdown-item">
+                    <div className="breakdown-info">
+                      <span className="breakdown-name">{project}</span>
+                      <span className="breakdown-detail">{stats.users.size} usuários</span>
+                    </div>
+                    <div className="breakdown-metrics">
+                      <span className="breakdown-count">{stats.count}</span>
+                      <span className="breakdown-duration">{formatDuration(stats.totalTime)}</span>
+                    </div>
                   </div>
-                  <div className="breakdown-metrics">
-                    <span className="breakdown-count">{project.timerCount}</span>
-                    <span className="breakdown-duration">{formatDuration(project.totalTimeMs)}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              }
             </div>
           </div>
         )}
@@ -654,20 +654,35 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         {/* Top Users */}
         {showUserBreakdown && (
           <div className="breakdown-container">
-            <h3>Top Usuários</h3>
+            <h3>👤 Top Usuários (Filtrados)</h3>
             <div className="breakdown-list">
-              {data.stats.userBreakdown.slice(0, 5).map((user: UserTimerStats) => (
-                <div key={user.username} className="breakdown-item">
-                  <div className="breakdown-info">
-                    <span className="breakdown-name">{user.username}</span>
-                    <span className="breakdown-detail">{user.projects.length} projetos</span>
+              {Object.entries(
+                visibleItems.reduce((acc, timer) => {
+                  const user = timer.username;
+                  if (!acc[user]) {
+                    acc[user] = { count: 0, totalTime: 0, projects: new Set() };
+                  }
+                  acc[user].count++;
+                  acc[user].totalTime += timer.elapsedMs;
+                  acc[user].projects.add(timer.projectShortName);
+                  return acc;
+                }, {} as Record<string, { count: number; totalTime: number; projects: Set<string> }>)
+              )
+                .sort(([,a], [,b]) => b.count - a.count)
+                .slice(0, 5)
+                .map(([user, stats]) => (
+                  <div key={user} className="breakdown-item">
+                    <div className="breakdown-info">
+                      <span className="breakdown-name">{user}</span>
+                      <span className="breakdown-detail">{stats.projects.size} projetos</span>
+                    </div>
+                    <div className="breakdown-metrics">
+                      <span className="breakdown-count">{stats.count}</span>
+                      <span className="breakdown-duration">{formatDuration(stats.totalTime)}</span>
+                    </div>
                   </div>
-                  <div className="breakdown-metrics">
-                    <span className="breakdown-count">{user.timerCount}</span>
-                    <span className="breakdown-duration">{formatDuration(user.totalTimeMs)}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              }
             </div>
           </div>
         )}
