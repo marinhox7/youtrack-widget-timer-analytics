@@ -59,13 +59,12 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   const [selectedMetric, setSelectedMetric] = useState<'count' | 'duration' | 'average'>('count');
   const [selectedTimeRange, setSelectedTimeRange] = useState(timeRange);
 
-  const logger = Logger.getLogger('TimerAnalytics');
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const logger = useMemo(() => Logger.getLogger('TimerAnalytics'), []);
 
-  const api = new YouTrackAPI(host);
+  const api = useMemo(() => new YouTrackAPI(host), [host]);
 
   // Função avançada para calcular séries históricas suavizadas
-  const calculateAdvancedTrends = useCallback((timers: TimerEntry[]): AnalyticsData['trends'] => {
+  const calculateAdvancedTrends = (timers: TimerEntry[]): AnalyticsData['trends'] => {
     const now = new Date();
 
     const totalTimers = timers.length;
@@ -138,7 +137,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         0.02 // Reduzir variação
       )
     };
-  }, []);
+  };
   // Fetch simplificado
   const fetchAnalyticsData = useCallback(async () => {
     try {
@@ -151,7 +150,6 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       const trends = calculateAdvancedTrends(timers);
 
       setData({ timers, stats, trends });
-      setLastUpdated(new Date());
 
       logger.warn('Analytics data loaded', {
         timerCount: timers.length,
@@ -164,7 +162,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     } finally {
       setLoading(false);
     }
-  }, [api, calculateAdvancedTrends]);
+  }, [api, logger]);
 
   // Auto refresh
   useEffect(() => {
@@ -444,16 +442,6 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
           <option value="average">Duração Média</option>
         </select>
 
-        <div
-          className="last-update-indicator"
-          aria-live="polite"
-          title={lastUpdated ? lastUpdated.toLocaleString() : 'Sem dados atualizados'}
-        >
-          <span className="status-dot" />
-          <span className="last-update-text">
-            {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
-          </span>
-        </div>
 
         <button onClick={fetchAnalyticsData} className="refresh-button" disabled={loading}>
           Atualizar
@@ -686,9 +674,6 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
 
       {/* Footer */}
       <div className="analytics-footer">
-        <div className="footer-updated">
-          Última atualização: {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
-        </div>
         <div>
           {data.timers.length} timers ativos • {data.stats.totalUsers} usuários
         </div>
