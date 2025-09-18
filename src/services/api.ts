@@ -865,6 +865,16 @@ export function calculateStats(entries: TimerEntry[]): TimerStats {
 }
 
 /**
+ * Format duration in HH:MM format (Braip standard)
+ */
+export function formatDurationHHMM(ms: number): string {
+  const totalMinutes = Math.floor(ms / (1000 * 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}:${minutes.toString().padStart(2, '0')}`;
+}
+
+/**
  * Format duration with intelligent precision
  */
 export function formatDuration(ms: number, options: {

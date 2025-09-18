@@ -1,0 +1,79 @@
+/**
+ * Braip Company Color Palette
+ * Colors extracted from official Braip brand guidelines
+ */
+
+:root {
+  /* Primary Colors */
+  --primary-600: #6D36FB;
+  --primary-500: #8A5EFC;
+  --primary-400: #A786FD;
+  --primary-300: #C5AFFD;
+  --primary-200: #E2D7FE;
+  --primary-100: #F4F0FF;
+
+  /* Secondary Colors */
+  --secondary-600: #99FF33;
+  --secondary-500: #ADFF5C;
+  --secondary-400: #C2FF85;
+  --secondary-300: #D6FFAD;
+  --secondary-200: #EBFFD6;
+  --secondary-100: #F5FFEB;
+
+  /* Auxiliary Colors */
+  --red-600: #FF2E2E;
+  --red-500: #FE5F5F;
+  --orange-600: #FF9900;
+  --orange-500: #FFAF36;
+  --yellow-600: #FFD600;
+  --yellow-500: #FFE24D;
+  --blue-600: #3399FF;
+  --blue-500: #6BB5FF;
+  --green-600: #5EC34D;
+  --green-500: #72D761;
+  --pink-600: #FF3FCE;
+  --pink-500: #FF68D9;
+
+  /* Neutral Colors */
+  --grey-800: #6D6D76;
+  --grey-700: #5B5B61;
+  --grey-600: #505057;
+  --grey-500: #414146;
+  --grey-200: #19191E;
+  --grey-100: #0D0D12;
+  --grey-0: #0B0B0E;
+  --light-100: #F7F7FC;
+  --light-200: #EBEBF8;
+  --light-300: #DCDCF0;
+
+  /* Project Color Mapping */
+  --project-color-1: var(--primary-600);
+  --project-color-2: var(--secondary-600);
+  --project-color-3: var(--orange-600);
+  --project-color-4: var(--blue-600);
+  --project-color-5: var(--green-600);
+  --project-color-6: var(--pink-600);
+  --project-color-7: var(--yellow-600);
+  --project-color-8: var(--red-600);
+
+  /* Status Colors */
+  --status-ok: var(--green-600);
+  --status-attention: var(--orange-600);
+  --status-long: var(--yellow-600);
+  --status-critical: var(--red-600);
+
+  /* Background Colors */
+  --bg-primary: var(--grey-0);
+  --bg-secondary: var(--grey-100);
+  --bg-tertiary: var(--grey-200);
+
+  /* Text Colors */
+  --text-primary: var(--light-100);
+  --text-secondary: var(--light-200);
+  --text-muted: var(--grey-800);
+
+  /* Border Colors */
+  --border-primary: var(--grey-500);
+  --border-secondary: var(--grey-600);
+  --border-accent: var(--primary-600);
+}

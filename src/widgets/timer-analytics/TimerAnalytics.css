@@ -312,7 +312,7 @@
 }
 
 .widget-container .refresh-button {
-  background-color: #007acc !important;
+  background-color: var(--primary-600) !important;
   color: white !important;
   border: none !important;
   padding: 6px 12px !important;
@@ -326,7 +326,7 @@
 }
 
 .widget-container .refresh-button:hover:not(:disabled) {
-  background-color: #0056b3 !important;
+  background-color: var(--primary-500) !important;
 }
 
 .widget-container .refresh-button:disabled {
@@ -350,9 +350,9 @@
   display: flex !important;
   align-items: center !important;
   padding: 12px !important;
-  background-color: #2d2d2d !important;
+  background-color: var(--bg-secondary) !important;
   border-radius: 8px !important;
-  border-left: 4px solid #007acc !important;
+  border-left: 4px solid var(--primary-600) !important;
   transition: transform 0.2s, box-shadow 0.2s !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
   width: 100% !important;
@@ -367,8 +367,8 @@
 }
 
 .widget-container .metric-card.critical {
-  border-left-color: #dc3545 !important;
-  background-color: rgba(220, 53, 69, 0.1) !important;
+  border-left-color: var(--red-600) !important;
+  background-color: rgba(255, 46, 46, 0.1) !important;
 }
 
 .widget-container .metric-icon {
@@ -449,7 +449,7 @@
 }
 
 .widget-container .active-issue-card:hover {
-  border-color: #007acc !important;
+  border-color: var(--primary-600) !important;
   box-shadow: 0 8px 24px rgba(0, 122, 204, 0.4) !important;
   transform: translateY(-4px) scale(1.02) !important;
 }
@@ -461,7 +461,7 @@
   left: 0 !important;
   right: 0 !important;
   height: 4px !important;
-  background: linear-gradient(90deg, #007acc, #0056b3) !important;
+  background: linear-gradient(90deg, var(--primary-600), var(--primary-500)) !important;
   opacity: 0 !important;
   transition: opacity 0.3s ease !important;
 }
@@ -500,12 +500,12 @@
   font-family: 'JetBrains Mono', 'Monaco', 'Menlo', 'Consolas', monospace !important;
   font-weight: 700 !important;
   font-size: 14px !important;
-  color: #007acc !important;
+  color: var(--primary-600) !important;
   text-decoration: none !important;
   background: linear-gradient(135deg, rgba(0, 122, 204, 0.15), rgba(0, 122, 204, 0.25)) !important;
   padding: 8px 12px !important;
   border-radius: 8px !important;
-  border: 1px solid rgba(0, 122, 204, 0.3) !important;
+  border: 1px solid rgba(109, 54, 251, 0.3) !important;
   transition: all 0.2s ease !important;
   white-space: nowrap !important;
 }
@@ -555,7 +555,7 @@
 }
 
 .widget-container .timer-duration {
-  color: #28a745 !important;
+  color: var(--green-600) !important;
   font-weight: 600 !important;
   font-family: monospace !important;
 }
@@ -582,23 +582,23 @@
 }
 
 .widget-container .status-badge.ok {
-  background: #d4edda !important;
-  color: #155724 !important;
+  background: rgba(94, 195, 77, 0.2) !important;
+  color: var(--green-600) !important;
 }
 
 .widget-container .status-badge.attention {
-  background: #fff3cd !important;
-  color: #856404 !important;
+  background: rgba(255, 153, 0, 0.2) !important;
+  color: var(--orange-600) !important;
 }
 
 .widget-container .status-badge.long {
-  background: #fde2e4 !important;
-  color: #721c24 !important;
+  background: rgba(255, 214, 0, 0.2) !important;
+  color: var(--yellow-600) !important;
 }
 
 .widget-container .status-badge.critical {
-  background: #f8d7da !important;
-  color: #721c24 !important;
+  background: rgba(255, 46, 46, 0.2) !important;
+  color: var(--red-600) !important;
   animation: blink 2s infinite !important;
 }
 
@@ -725,7 +725,7 @@
 
 .widget-container .breakdown-count {
   font-weight: bold !important;
-  color: #007acc !important;
+  color: var(--primary-600) !important;
   font-size: 13px !important;
 }
 
