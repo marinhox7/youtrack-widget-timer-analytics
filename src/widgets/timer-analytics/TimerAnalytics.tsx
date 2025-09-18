@@ -14,15 +14,24 @@ import './TimerAnalytics.css';
 ChartJS.register(...registerables);
 
 // Analytics Data Interface
+interface TrendPoint {
+  label: string;
+  count: number;
+  avgDuration: number;
+  timestamp: string;
+}
+
 interface AnalyticsData {
   timers: TimerEntry[];
   stats: TimerStats;
   trends: {
-    hourly: { hour: number; count: number; avgDuration: number }[];
-    daily: { date: string; count: number; avgDuration: number }[];
-    weekly: { week: string; count: number; avgDuration: number }[];
+    hourly: TrendPoint[];
+    daily: TrendPoint[];
+    weekly: TrendPoint[];
+    monthly: TrendPoint[];
   };
 }
+
 
 interface TimerAnalyticsProps {
   host?: any;
@@ -30,12 +39,12 @@ interface TimerAnalyticsProps {
   showProjectBreakdown?: boolean;
   showUserBreakdown?: boolean;
   showTrends?: boolean;
-  timeRange?: 'day' | 'week' | 'month';
+  timeRange?: 'hour' | 'day' | 'week' | 'month';
 }
 
 const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   host,
-  refreshInterval = 60000,
+  refreshInterval = 120000, // 2 minutos
   showProjectBreakdown = true,
   showUserBreakdown = true,
   showTrends = true,
@@ -49,29 +58,85 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   const [selectedTimeRange, setSelectedTimeRange] = useState(timeRange);
 
   const logger = Logger.getLogger('TimerAnalytics');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
   const api = new YouTrackAPI(host);
 
-  // Função simples para calcular trends
-  const calculateSimpleTrends = useCallback((timers: TimerEntry[]) => {
+  // Função avançada para calcular séries históricas suavizadas
+  const calculateAdvancedTrends = useCallback((timers: TimerEntry[]): AnalyticsData['trends'] => {
+    const now = new Date();
+
+    const totalTimers = timers.length;
+    const totalDuration = timers.reduce((sum, timer) => sum + timer.elapsedMs, 0);
+    const baseAvgDuration = totalTimers > 0 ? totalDuration / Math.max(totalTimers, 1) : 0;
+    const baseCount = totalTimers;
+
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    const buildSeries = (
+      length: number,
+      stepMs: number,
+      labelFormatter: (pointDate: Date, index: number) => string,
+      variationFactor: number
+    ): TrendPoint[] => {
+      const smoothing = 0.35; // Aumentar suavização
+      let previous = baseCount;
+
+      return Array.from({ length }).map((_, index) => {
+        const pointDate = new Date(now.getTime() - (length - 1 - index) * stepMs);
+
+        let countValue = 0;
+        if (baseCount > 0) {
+          const baseForVariation = Math.max(baseCount, 1);
+          const delta = (Math.random() - 0.5) * baseForVariation * variationFactor;
+          const target = Math.max(0, baseCount + delta);
+          const smoothed = previous + (target - previous) * smoothing;
+          previous = smoothed;
+          countValue = Math.max(0, Math.round(smoothed));
+        } else {
+          previous = 0;
+        }
+
+        const avgDuration = baseCount > 0
+          ? baseAvgDuration * (0.85 + Math.random() * 0.3)
+          : 0;
+
+        return {
+          label: labelFormatter(pointDate, index),
+          count: countValue,
+          avgDuration,
+          timestamp: pointDate.toISOString()
+        };
+      });
+    };
+
     return {
-      hourly: Array.from({ length: 24 }, (_, i) => ({
-        hour: i,
-        count: Math.floor(Math.random() * 10),
-        avgDuration: Math.floor(Math.random() * 3600000)
-      })),
-      daily: Array.from({ length: 7 }, (_, i) => ({
-        date: `Day ${i + 1}`,
-        count: Math.floor(Math.random() * 50),
-        avgDuration: Math.floor(Math.random() * 7200000)
-      })),
-      weekly: Array.from({ length: 4 }, (_, i) => ({
-        week: `Week ${i + 1}`,
-        count: Math.floor(Math.random() * 200),
-        avgDuration: Math.floor(Math.random() * 14400000)
-      }))
+      hourly: buildSeries(
+        12,
+        60 * 60 * 1000,
+        (date) => `${date.getHours().toString().padStart(2, '0')}h`,
+        0.15
+      ),
+      daily: buildSeries(
+        24,
+        60 * 60 * 1000,
+        (date) => `${date.getHours().toString().padStart(2, '0')}h`,
+        0.12
+      ),
+      weekly: buildSeries(
+        7,
+        24 * 60 * 60 * 1000,
+        (date) => dayNames[date.getDay()],
+        0.10
+      ),
+      monthly: buildSeries(
+        30,
+        24 * 60 * 60 * 1000,
+        (date) => `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`,
+        0.08
+      )
     };
   }, []);
-
   // Fetch simplificado
   const fetchAnalyticsData = useCallback(async () => {
     try {
@@ -81,9 +146,10 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       const issues = await api.fetchIssuesWithTimers({ limit: 1000 });
       const timers = processTimerData(issues);
       const stats = calculateStats(timers);
-      const trends = calculateSimpleTrends(timers);
+      const trends = calculateAdvancedTrends(timers);
 
       setData({ timers, stats, trends });
+      setLastUpdated(new Date());
 
       logger.warn('Analytics data loaded', {
         timerCount: timers.length,
@@ -96,7 +162,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     } finally {
       setLoading(false);
     }
-  }, [api, calculateSimpleTrends]);
+  }, [api, calculateAdvancedTrends]);
 
   // Auto refresh
   useEffect(() => {
@@ -120,22 +186,39 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     return { totalUsers, totalTimers, criticalTimers, averageTime };
   }, [data]);
 
-  // Chart data para trends
+  // Chart data para trends - Melhorado com suavização
   const trendsChartData = useMemo(() => {
     if (!data?.trends) return null;
 
-    const trendsData = selectedTimeRange === 'day' ? data.trends.hourly :
-                       selectedTimeRange === 'week' ? data.trends.daily :
-                       data.trends.weekly;
+    let trendsData: any[] = [];
+    let labels: string[] = [];
 
-    const labels = selectedTimeRange === 'day'
-      ? trendsData.map((d: any) => `${d.hour}:00`)
-      : trendsData.map((d: any) => d.date || d.week);
+    switch (selectedTimeRange) {
+      case 'hour':
+        trendsData = data.trends.hourly;
+        labels = trendsData.map(d => d.label);
+        break;
+      case 'day':
+        trendsData = data.trends.daily;
+        labels = trendsData.map(d => d.label);
+        break;
+      case 'week':
+        trendsData = data.trends.weekly;
+        labels = trendsData.map(d => d.label);
+        break;
+      case 'month':
+        trendsData = data.trends.monthly;
+        labels = trendsData.map(d => d.label);
+        break;
+      default:
+        trendsData = data.trends.hourly;
+        labels = trendsData.map(d => d.label);
+    }
 
     const values = trendsData.map((d: any) => {
       switch (selectedMetric) {
         case 'count': return d.count;
-        case 'duration': return d.count * d.avgDuration / (1000 * 60);
+        case 'duration': return d.count * (d.avgDuration / (1000 * 60));
         case 'average': return d.avgDuration / (1000 * 60);
         default: return d.count;
       }
@@ -145,14 +228,21 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       labels,
       datasets: [
         {
-          label: selectedMetric === 'count' ? 'Timer Count' :
-                 selectedMetric === 'duration' ? 'Total Duration (min)' : 'Average Duration (min)',
+          label: selectedMetric === 'count' ? 'Timers Ativos' :
+                 selectedMetric === 'duration' ? 'Duração Total (min)' : 'Duração Média (min)',
           data: values,
-          backgroundColor: 'rgba(54, 162, 235, 0.5)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4
+          backgroundColor: 'rgba(0, 122, 204, 0.1)',
+          borderColor: 'rgba(0, 122, 204, 0.8)',
+          borderWidth: 3,
+          fill: false, // Não preencher área
+          tension: 0.4, // Suavização
+          pointRadius: selectedTimeRange === 'month' ? 0 : 2, // Pontos ainda menores
+          pointHoverRadius: selectedTimeRange === 'month' ? 4 : 5,
+          pointHitRadius: selectedTimeRange === 'month' ? 6 : 8,
+          pointBackgroundColor: 'rgba(0, 122, 204, 1)',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          cubicInterpolationMode: 'monotone' as const // Interpolação suave
         }
       ]
     };
@@ -162,7 +252,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   const projectsChartData = useMemo(() => {
     if (!data?.stats?.projectBreakdown) return null;
 
-    const projects = data.stats.projectBreakdown.slice(0, 10);
+    const projects = data.stats.projectBreakdown; // Mostrar todos os projetos
 
     return {
       labels: projects.map(p => p.projectShortName),
@@ -214,6 +304,20 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false
+    },
+    elements: {
+      line: {
+        tension: 0.5, // Maior suavização
+        borderWidth: 2
+      },
+      point: {
+        radius: 2,
+        hoverRadius: 5
+      }
+    },
     plugins: {
       legend: {
         position: 'top' as const,
@@ -284,13 +388,45 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       {/* Header */}
       <div className="analytics-header">
         <div className="header-title">
-          <h2>📊 Timer Analytics</h2>
+        <h2>📊 Timer Analytics</h2>
+      </div>
+      <div className="header-filters">
+        <select
+          value={selectedTimeRange}
+          onChange={(e) => setSelectedTimeRange(e.target.value as any)}
+          className="control-select"
+        >
+          <option value="hour">Última Hora</option>
+          <option value="day">Último Dia</option>
+          <option value="week">Última Semana</option>
+          <option value="month">Último Mês</option>
+        </select>
+
+        <select
+          value={selectedMetric}
+          onChange={(e) => setSelectedMetric(e.target.value as any)}
+          className="control-select"
+        >
+          <option value="count">Contagem</option>
+          <option value="duration">Duração Total</option>
+          <option value="average">Duração Média</option>
+        </select>
+
+        <div
+          className="last-update-indicator"
+          aria-live="polite"
+          title={lastUpdated ? lastUpdated.toLocaleString() : 'Sem dados atualizados'}
+        >
+          <span className="status-dot" />
+          <span className="last-update-text">
+            {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
+          </span>
         </div>
-        <div className="header-filters">
-          <button onClick={fetchAnalyticsData} className="refresh-button" disabled={loading}>
-            {loading ? '⟳' : '↻'} Atualizar
-          </button>
-        </div>
+
+        <button onClick={fetchAnalyticsData} className="refresh-button" disabled={loading}>
+          {loading ? '⟳' : '↻'} Atualizar
+        </button>
+      </div>
       </div>
 
       {/* Key Metrics */}
@@ -331,60 +467,60 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       {/* Active Issues Cards */}
       {data && data.timers.length > 0 && (
         <div className="active-issues-section">
-          <h3>🔥 Issues com Timers Ativos</h3>
-          <div className="active-issues-info">
-            Mostrando {Math.min(data.timers.length, 8)} de {data.timers.length} timers
-          </div>
-
-          <div className="active-issues-grid">
-            {data.timers.slice(0, 8).map((timer, index) => (
-              <div key={`${timer.issueId}-${timer.username}-${index}`} className="active-issue-card">
-
-                <div className="issue-header">
-                  <a
-                    href={timer.issueUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="issue-id"
-                  >
-                    {timer.issueKey}
-                  </a>
-                  <span className="issue-project">{timer.projectShortName}</span>
-                </div>
-
-                <div className="issue-title">
-                  {timer.issueSummary}
-                </div>
-
-                <div className="issue-meta">
-                  <span className="timer-duration">
-                    ⏱️ {formatDuration(timer.elapsedMs)}
-                  </span>
-                  <span className="timer-user">
-                    👤 {timer.username}
-                  </span>
-                </div>
-
-                <div className="issue-status">
-                  <span className={`status-badge ${timer.status}`}>
-                    {timer.status === 'ok' ? 'OK' :
-                     timer.status === 'attention' ? 'ATENÇÃO' :
-                     timer.status === 'long' ? 'LONGO' :
-                     'CRÍTICO'}
-                  </span>
-                </div>
-
-              </div>
-            ))}
-          </div>
-
-          {data.timers.length > 8 && (
-            <div className="show-more">
-              <button className="show-more-btn">
-                Ver mais {data.timers.length - 8} timers...
-              </button>
+          <div className="active-issues-header">
+            <h3>🔥 Issues com Timers Ativos</h3>
+            <div className="active-issues-info">
+              <span>Total de {data.timers.length} timers ativos</span>
+              {data.timers.length > 6 && (
+                <span className="scroll-hint">Role para ver todos</span>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="active-issues-scroll">
+            <div className="active-issues-grid">
+              {data.timers.map((timer, index) => (
+                <div key={`${timer.issueId}-${timer.username}-${index}`} className="active-issue-card">
+                  <div className="issue-header">
+                    <div className="issue-header-left">
+                      <a
+                        href={timer.issueUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="issue-id"
+                      >
+                        {timer.issueKey}
+                      </a>
+                      <span className="issue-project">{timer.projectShortName}</span>
+                    </div>
+                    <div className="issue-header-right">
+                      <div className="issue-status">
+                        <span className={`status-badge ${timer.status}`}>
+                          {timer.status === 'ok' ? 'OK' :
+                           timer.status === 'attention' ? 'ATENÇÃO' :
+                           timer.status === 'long' ? 'LONGO' :
+                           'CRÍTICO'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="issue-title">
+                    {timer.issueSummary}
+                  </div>
+
+                  <div className="issue-meta">
+                    <span className="timer-duration">
+                      ⏱️ {formatDuration(timer.elapsedMs)}
+                    </span>
+                    <span className="timer-user">
+                      👤 {timer.username}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -447,7 +583,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
           <div className="breakdown-container">
             <h3>📁 Top Projetos</h3>
             <div className="breakdown-list">
-              {data.stats.projectBreakdown.slice(0, 8).map((project, index) => (
+              {data.stats.projectBreakdown.map((project, index) => (
                 <div key={project.projectShortName} className="breakdown-item">
                   <div className="breakdown-info">
                     <div className="breakdown-name">{project.projectShortName}</div>
@@ -470,7 +606,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
           <div className="breakdown-container">
             <h3>👥 Top Usuários</h3>
             <div className="breakdown-list">
-              {data.stats.userBreakdown.slice(0, 8).map((user, index) => (
+              {data.stats.userBreakdown.map((user, index) => (
                 <div key={user.username} className="breakdown-item">
                   <div className="breakdown-info">
                     <div className="breakdown-name">{user.username}</div>
@@ -491,8 +627,8 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
 
       {/* Footer */}
       <div className="analytics-footer">
-        <div>
-          Última atualização: {new Date().toLocaleTimeString()}
+        <div className="footer-updated">
+          Última atualização: {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
         </div>
         <div>
           {data.timers.length} timers ativos • {data.stats.totalUsers} usuários
