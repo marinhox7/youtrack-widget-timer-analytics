@@ -84,20 +84,22 @@
   cursor: not-allowed !important;
 }
 
-/* Metrics Grid */
+/* Metrics Grid - Force 4 columns horizontal layout */
 .widget-container .metrics-grid {
   display: grid !important;
   grid-template-columns: repeat(4, 1fr) !important;
+  grid-template-rows: 1fr !important;
   gap: 16px !important;
   padding: 16px !important;
   flex-shrink: 0 !important;
   width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .widget-container .metric-card {
   display: flex !important;
   align-items: center !important;
-  padding: 16px !important;
+  padding: 12px !important;
   background-color: #2d2d2d !important;
   border-radius: 8px !important;
   border-left: 4px solid #007acc !important;
@@ -105,6 +107,8 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
   width: 100% !important;
   min-width: 0 !important;
+  box-sizing: border-box !important;
+  flex-shrink: 1 !important;
 }
 
 .widget-container .metric-card:hover {
@@ -566,8 +570,10 @@
   }
 
   .widget-container .metrics-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 12px !important;
   }
+}
 }
 
 @media (max-width: 768px) {
@@ -579,13 +585,10 @@
 
   .widget-container .metrics-grid {
     grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
   }
 }
 
-  .widget-container .metrics-grid {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-  }
 
   .widget-container .metric-card {
     padding: 12px !important;
