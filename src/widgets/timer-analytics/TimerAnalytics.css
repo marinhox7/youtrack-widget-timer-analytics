@@ -16,12 +16,25 @@
 /* Header */
 .widget-container .analytics-header {
   display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
+  flex-direction: column !important;
+  gap: 12px !important;
   padding: 16px !important;
   background-color: #2d2d2d !important;
   border-bottom: 1px solid #404040 !important;
   flex-shrink: 0 !important;
+}
+
+.widget-container .header-title {
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+}
+
+.widget-container .header-filters {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
 }
 
 .widget-container .analytics-header h2 {
@@ -31,35 +44,7 @@
   color: #ffffff !important;
 }
 
-.widget-container .header-controls {
-  display: flex !important;
-  gap: 8px !important;
-  align-items: center !important;
-}
 
-/* Test Indicator */
-.widget-container .test-indicator {
-  display: flex !important;
-  align-items: center !important;
-  margin: 0 16px !important;
-}
-
-.widget-container .test-badge {
-  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%) !important;
-  color: white !important;
-  padding: 4px 12px !important;
-  border-radius: 12px !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.5px !important;
-  animation: pulse-test 2s infinite !important;
-  box-shadow: 0 2px 4px rgba(255, 107, 53, 0.3) !important;
-}
-
-@keyframes pulse-test {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(0.98); }
-}
 
 .widget-container .control-select {
   padding: 4px 8px !important;
@@ -102,10 +87,11 @@
 /* Metrics Grid */
 .widget-container .metrics-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+  grid-template-columns: repeat(4, 1fr) !important;
   gap: 16px !important;
   padding: 16px !important;
   flex-shrink: 0 !important;
+  width: 100% !important;
 }
 
 .widget-container .metric-card {
@@ -117,6 +103,8 @@
   border-left: 4px solid #007acc !important;
   transition: transform 0.2s, box-shadow 0.2s !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  width: 100% !important;
+  min-width: 0 !important;
 }
 
 .widget-container .metric-card:hover {
@@ -174,48 +162,12 @@
   color: #ffffff !important;
 }
 
-/* Admin Notice */
-.widget-container .admin-notice {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  margin-bottom: 16px !important;
-  padding: 8px 12px !important;
-  background-color: rgba(0, 122, 204, 0.1) !important;
-  border: 1px solid rgba(0, 122, 204, 0.2) !important;
-  border-radius: 4px !important;
-  font-size: 12px !important;
-}
-
-.widget-container .admin-badge {
-  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%) !important;
-  color: #ffffff !important;
-  padding: 3px 8px !important;
-  border-radius: 12px !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  box-shadow: 0 2px 4px rgba(243, 156, 18, 0.3) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 2px !important;
-}
-
-.widget-container .admin-text {
-  color: #007acc !important;
-  font-weight: 500 !important;
-}
-
+/* Active Issues Grid */
 .widget-container .active-issues-grid {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
   gap: 12px !important;
   padding: 0 !important;
-  max-height: 400px !important;
-  overflow-y: auto !important;
 }
 
 .widget-container .active-issue-card {
@@ -345,63 +297,7 @@
 }
 
 /* Timer Actions */
-.widget-container .timer-actions {
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  align-items: center !important;
-  min-width: 90px !important;
-}
-
 /* Enhanced Admin Cancel Button */
-.widget-container .admin-cancel-timer-btn {
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
-  color: #ffffff !important;
-  border: 1px solid #e74c3c !important;
-  border-radius: 6px !important;
-  padding: 8px 12px !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 2px 4px rgba(231, 76, 60, 0.2) !important;
-  min-width: 85px !important;
-  justify-content: center !important;
-  white-space: nowrap !important;
-  position: relative !important;
-  overflow: hidden !important;
-}
-
-.widget-container .admin-cancel-timer-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4) !important;
-  border-color: #c0392b !important;
-}
-
-.widget-container .admin-cancel-timer-btn:disabled {
-  background: #6c757d !important;
-  cursor: not-allowed !important;
-  opacity: 0.6 !important;
-  transform: none !important;
-  box-shadow: none !important;
-  border-color: #6c757d !important;
-}
-
-.widget-container .admin-cancel-timer-btn .loading-spinner {
-  animation: spin 1s linear infinite !important;
-  display: inline-block !important;
-  font-size: 12px !important;
-}
-
-.widget-container .admin-cancel-timer-btn .admin-icon {
-  font-size: 12px !important;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) !important;
-}
-
 .widget-container .no-active-issues {
   grid-column: 1 / -1 !important;
   text-align: center !important;
@@ -670,24 +566,24 @@
   }
 
   .widget-container .metrics-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 
 @media (max-width: 768px) {
-  .widget-container .analytics-header {
-    flex-direction: column !important;
-    gap: 12px !important;
-    text-align: center !important;
-  }
-
-  .widget-container .header-controls {
+  .widget-container .header-filters {
     flex-wrap: wrap !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
   }
 
   .widget-container .metrics-grid {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+  .widget-container .metrics-grid {
+    grid-template-columns: 1fr !important;
     gap: 12px !important;
   }
 
@@ -834,18 +730,6 @@
 .widget-container .error-container,
 .widget-container .empty-state,
 .widget-container .metric-card,
-.widget-container .admin-notice,
-.widget-container .active-issues-grid,
-.widget-container .active-issue-card,
-.widget-container .issue-content,
-.widget-container .issue-header,
-.widget-container .issue-meta,
-.widget-container .issue-status,
-.widget-container .timer-actions,
-.widget-container .admin-cancel-timer-btn {
-  display: flex !important;
-}
-
 /* Grid containers */
 .widget-container .metrics-grid,
 .widget-container .charts-grid,
@@ -866,21 +750,5 @@
 
 .widget-container .loading-spinner {
   animation: spin 1s linear infinite !important;
-}
-
-.widget-container .admin-cancel-timer-btn,
-.widget-container .cancel-timer-button,
-.widget-container .refresh-button,
-.widget-container .retry-button,
-.widget-container .show-more-btn {
-  transition: all 0.2s ease !important;
-}
-
-.widget-container .admin-cancel-timer-btn:hover,
-.widget-container .cancel-timer-button:hover,
-.widget-container .refresh-button:hover,
-.widget-container .retry-button:hover,
-.widget-container .show-more-btn:hover {
-  transform: translateY(-1px) !important;
 }
 
