@@ -15,6 +15,34 @@ import './TimerAnalytics.css';
 // Register Chart.js components
 ChartJS.register(...registerables);
 
+// Memoized Timer Card Component
+const TimerCard = memo(({ timer }: { timer: TimerEntry }) => (
+  <div className="active-issue-card">
+    <div className="issue-content">
+      <div className="issue-header">
+        <span className="issue-id">{timer.issueKey}</span>
+        <span className="issue-project">{timer.projectShortName}</span>
+      </div>
+      <div className="issue-title">{timer.issueSummary}</div>
+      <div className="issue-meta">
+        <span className="timer-duration">⏱️ {formatDuration(timer.elapsedMs, { precision: 'medium' })}</span>
+        <span className="timer-user">👤 {timer.username}</span>
+      </div>
+      <div className="issue-status">
+        <span className={`status-badge ${timer.status}`}>
+          {timer.status === 'ok' && '✅ OK'}
+          {timer.status === 'attention' && '⚠️ Atenção'}
+          {timer.status === 'long' && '🟡 Longo'}
+          {timer.status === 'critical' && '🟠 Crítico'}
+          {timer.status === 'overtime' && '🔴 Overtime'}
+        </span>
+      </div>
+    </div>
+  </div>
+));
+
+TimerCard.displayName = 'TimerCard';
+
 interface TimerAnalyticsProps {
   host?: any;
   refreshInterval?: number;
@@ -52,6 +80,15 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   const logger = Logger.getLogger('TimerAnalytics');
   const api = new YouTrackAPI(host);
 
+  // Memoized handlers
+  const handleTimeRangeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedTimeRange(e.target.value as any);
+  }, []);
+
+  const handleMetricChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedMetric(e.target.value as any);
+  }, []);
+
   const fetchAnalyticsData = useCallback(async () => {
     try {
       setLoading(true);
@@ -69,7 +106,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       const trends = calculateTrends(timers, selectedTimeRange);
 
       setData({ timers, stats, trends });
-      logger.info('Analytics data updated', { timerCount: timers.length, projectCount: stats.projectBreakdown.length });
+      logger.warn('Analytics data updated', { timerCount: timers.length, projectCount: stats.projectBreakdown.length });
 
     } catch (err) {
       logger.error('Failed to fetch analytics data', err as Error);
@@ -89,8 +126,8 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   }, [fetchAnalyticsData, refreshInterval]);
 
 
-    // Calculate trends data (single-pass bucketing for performance)
-  const calculateTrends = (timers: TimerEntry[], range: string) => {
+    // Calculate trends data (single-pass bucketing for performance) - Memoized
+  const calculateTrends = useCallback((timers: TimerEntry[], range: string) => {
     const now = new Date();
     const cutoffTime = range === 'day' ? subHours(now, 24) :
                       range === 'week' ? subDays(now, 7) :
@@ -144,7 +181,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       daily,
       weekly // Not used currently; placeholder to keep structure
     };
-  };
+  }, []);
 
   // Chart options (memoized to avoid re-renders)
   const chartOptions = useMemo(() => ({
@@ -326,7 +363,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         <div className="header-filters">
           <select
             value={selectedTimeRange}
-            onChange={(e) => setSelectedTimeRange(e.target.value as any)}
+            onChange={handleTimeRangeChange}
             className="control-select"
           >
             <option value="day">Último Dia</option>
@@ -336,7 +373,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
 
           <select
             value={selectedMetric}
-            onChange={(e) => setSelectedMetric(e.target.value as any)}
+            onChange={handleMetricChange}
             className="control-select"
           >
             <option value="count">Contagem</option>
@@ -391,29 +428,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         <div className="active-issues-grid">
           {data.timers.length > 0 ? (
             data.timers.map((timer, index) => (
-              <div key={`${timer.issueId}-${index}`} className="active-issue-card">
-                <div className="issue-content">
-                  <div className="issue-header">
-                    <span className="issue-id">{timer.issueKey}</span>
-                    <span className="issue-project">{timer.projectShortName}</span>
-                  </div>
-                  <div className="issue-title">{timer.issueSummary}</div>
-                  <div className="issue-meta">
-                    <span className="timer-duration">⏱️ {formatDuration(timer.elapsedMs, { precision: 'medium' })}</span>
-                    <span className="timer-user">👤 {timer.username}</span>
-                  </div>
-                  <div className="issue-status">
-                    <span className={`status-badge ${timer.status}`}>
-                      {timer.status === 'ok' && '✅ OK'}
-                      {timer.status === 'attention' && '⚠️ Atenção'}
-                      {timer.status === 'long' && '🟡 Longo'}
-                      {timer.status === 'critical' && '🟠 Crítico'}
-                      {timer.status === 'overtime' && '🔴 Overtime'}
-                    </span>
-                  </div>
-                </div>
-
-              </div>
+              <TimerCard key={`${timer.issueId}-${index}`} timer={timer} />
             ))
           ) : (
             <div className="no-active-issues">

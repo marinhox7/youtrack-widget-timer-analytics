@@ -49,18 +49,20 @@ export class Logger {
   private logs: LogEntry[] = [];
   private performanceMarks: Map<string, number> = new Map();
   private static instances: Map<string, Logger> = new Map();
+  private throttleMap: Map<string, number> = new Map();
+  private readonly THROTTLE_DURATION = 1000; // 1 segundo
 
   constructor(
     private context: string,
     private config: LoggerConfig = {
-      level: LogLevel.INFO,
+      level: LogLevel.WARN, // Mais restritivo
       enabled: true,
       console: true,
-      structured: true,
+      structured: false, // Menos verboso
       includeStackTrace: false,
-      maxEntries: 1000,
+      maxEntries: 100, // Reduzido de 1000
       contexts: [],
-      performance: true
+      performance: false // Desabilitado por padrão
     }
   ) {}
 
@@ -70,14 +72,14 @@ export class Logger {
   static getLogger(context: string, config?: Partial<LoggerConfig>): Logger {
     if (!Logger.instances.has(context)) {
       const defaultConfig: LoggerConfig = {
-        level: LogLevel.INFO,
+        level: LogLevel.WARN, // Mais restritivo
         enabled: true,
         console: true,
-        structured: true,
+        structured: false, // Menos verboso
         includeStackTrace: false,
-        maxEntries: 1000,
+        maxEntries: 100, // Reduzido
         contexts: [],
-        performance: true
+        performance: false // Desabilitado por padrão
       };
 
       Logger.instances.set(context, new Logger(context, { ...defaultConfig, ...config }));
@@ -202,7 +204,7 @@ export class Logger {
   }
 
   /**
-   * Core logging method
+   * Core logging method with throttling
    */
   private log(
     level: LogLevel,
@@ -214,6 +216,19 @@ export class Logger {
   ): void {
     if (!this.config.enabled || level < this.config.level) {
       return;
+    }
+
+    // Throttle identical messages (except for ERROR and FATAL)
+    if (level < LogLevel.ERROR) {
+      const throttleKey = `${message}-${JSON.stringify(data)}`;
+      const now = Date.now();
+      const lastLogged = this.throttleMap.get(throttleKey);
+
+      if (lastLogged && (now - lastLogged) < this.THROTTLE_DURATION) {
+        return; // Throttled
+      }
+
+      this.throttleMap.set(throttleKey, now);
     }
 
     // Filter by context if specified

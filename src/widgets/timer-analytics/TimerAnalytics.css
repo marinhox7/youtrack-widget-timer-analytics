@@ -300,8 +300,7 @@
   border-color: #59359a !important;
 }
 
-/* Timer Actions */
-/* Enhanced Admin Cancel Button */
+/* Timer Actions - Cleanup completed */
 .widget-container .no-active-issues {
   grid-column: 1 / -1 !important;
   text-align: center !important;
