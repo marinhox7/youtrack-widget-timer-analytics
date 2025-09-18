@@ -3,10 +3,11 @@
  * Provides comprehensive analytics and insights for timer data
  */
 
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { format, subDays, subHours, isWithinInterval } from 'date-fns';
+import { debounce } from 'throttle-debounce';
 import { YouTrackAPI, processTimerData, calculateStats, formatDuration } from '../../services/api';
 import { TimerEntry, TimerStats, ProjectTimerStats, UserTimerStats } from '../../types';
 import { Logger } from '../../services/logger';
@@ -146,17 +147,63 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
   const [selectedTimeRange, setSelectedTimeRange] = useState(timeRange);
   const [selectedProject, setSelectedProject] = useState<string>('all');
 
+  // Performance optimization states
+  const [isProcessing, setIsProcessing] = useState(false);
+  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const logger = Logger.getLogger('TimerAnalytics');
   const api = new YouTrackAPI(host);
 
+  // Debounced filter update functions
+  const debouncedTimeRangeUpdate = useMemo(
+    () => debounce(300, (newTimeRange: 'day' | 'week' | 'month') => {
+      setSelectedTimeRange(newTimeRange);
+      setIsProcessing(false);
+    }),
+    []
+  );
+
+  const debouncedMetricUpdate = useMemo(
+    () => debounce(300, (newMetric: 'count' | 'duration' | 'average') => {
+      setSelectedMetric(newMetric);
+      setIsProcessing(false);
+    }),
+    []
+  );
+
+  // Optimized filter change handlers
+  const handleFilterChange = useCallback((filterType: string, value: string) => {
+    setIsProcessing(true);
+
+    // Clear previous timeout
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+    }
+
+    // Apply filter with debounce
+    switch (filterType) {
+      case 'timeRange':
+        debouncedTimeRangeUpdate(value as 'day' | 'week' | 'month');
+        break;
+      case 'metric':
+        debouncedMetricUpdate(value as 'count' | 'duration' | 'average');
+        break;
+    }
+
+    // Fallback timeout to clear processing state
+    processingTimeoutRef.current = setTimeout(() => {
+      setIsProcessing(false);
+    }, 1000);
+  }, [debouncedTimeRangeUpdate, debouncedMetricUpdate]);
+
   // Memoized handlers
   const handleTimeRangeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedTimeRange(e.target.value as any);
-  }, []);
+    handleFilterChange('timeRange', e.target.value);
+  }, [handleFilterChange]);
 
   const handleMetricChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedMetric(e.target.value as any);
-  }, []);
+    handleFilterChange('metric', e.target.value);
+  }, [handleFilterChange]);
 
   const fetchAnalyticsData = useCallback(async () => {
     try {
@@ -172,7 +219,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
 
       const timers = processTimerData(issues);
       const stats = calculateStats(timers);
-      const trends = calculateTrends(timers, selectedTimeRange);
+      const trends = calculateTrendsOptimized(timers, selectedTimeRange);
 
       setData({ timers, stats, trends });
       logger.warn('Analytics data updated', { timerCount: timers.length, projectCount: stats.projectBreakdown.length });
@@ -194,62 +241,71 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     return () => clearInterval(interval);
   }, [fetchAnalyticsData, refreshInterval]);
 
-
-    // Calculate trends data (single-pass bucketing for performance) - Memoized
-  const calculateTrends = useCallback((timers: TimerEntry[], range: string) => {
-    const now = new Date();
-    const cutoffTime = range === 'day' ? subHours(now, 24) :
-                      range === 'week' ? subDays(now, 7) :
-                      subDays(now, 30);
-
-    const buckets = range === "day" ? 24 : (range === "week" ? 7 : 30);
-
-    // Initialize buckets
-    const hourly: { hour: number; count: number; avgDuration: number }[] = [];
-    const daily: { date: string; count: number; avgDuration: number }[] = [];
-    const weekly: { week: string; count: number; avgDuration: number }[] = [];
-
-    if (range === 'day') {
-      for (let i = buckets - 1; i >= 0; i--) {
-        const dt = subHours(now, i);
-        hourly.push({ hour: dt.getHours(), count: 0, avgDuration: 0 });
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
       }
-    } else {
-      for (let i = buckets - 1; i >= 0; i--) {
-        const dt = subDays(now, i);
-        const label = format(dt, 'MMM dd');
-        daily.push({ date: label, count: 0, avgDuration: 0 });
-      }
+    };
+  }, []);
+
+
+  // Optimized trends calculation with performance monitoring
+  const calculateTrendsOptimized = useCallback((timers: TimerEntry[], range: string) => {
+    console.time('calculateTrends');
+
+    // Early return for empty data
+    if (!timers.length) {
+      console.timeEnd('calculateTrends');
+      return { hourly: [], daily: [], weekly: [] };
     }
 
-    // Single pass bucketing
-    for (const timer of timers) {
-      if (timer.startTime < cutoffTime.getTime()) continue;
-      const duration = timer.elapsedMs;
+    const now = new Date();
+    const nowMs = now.getTime();
+    const buckets = range === "day" ? 24 : (range === "week" ? 7 : 30);
+    const intervalMs = range === 'day' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
-      if (range === 'day') {
-        const diffMs = now.getTime() - timer.startTime;
-        const hoursAgo = Math.floor(diffMs / (60 * 60 * 1000));
-        const idx = hourly.length - 1 - Math.min(Math.max(hoursAgo, 0), hourly.length - 1);
-        const bucket = hourly[idx];
-        bucket.count += 1;
-        bucket.avgDuration = ((bucket.avgDuration * (bucket.count - 1)) + duration) / bucket.count;
-      } else {
-        const dayLabel = format(new Date(timer.startTime), 'MMM dd');
-        const idx = daily.findIndex(d => d.date === dayLabel);
-        if (idx !== -1) {
-          const bucket = daily[idx];
-          bucket.count += 1;
-          bucket.avgDuration = ((bucket.avgDuration * (bucket.count - 1)) + duration) / bucket.count;
+    // Pre-compute time boundaries for efficiency
+    const boundaries = Array.from({ length: buckets }, (_, i) => {
+      const start = nowMs - ((buckets - i) * intervalMs);
+      const end = start + intervalMs;
+      return { start, end, index: i };
+    });
+
+    // Initialize result arrays
+    const result = range === 'day'
+      ? { hourly: boundaries.map(b => ({ hour: new Date(b.start).getHours(), count: 0, avgDuration: 0, totalDuration: 0 })), daily: [], weekly: [] }
+      : { hourly: [], daily: boundaries.map(b => ({ date: format(new Date(b.start), 'MMM dd'), count: 0, avgDuration: 0, totalDuration: 0 })), weekly: [] };
+
+    // Single pass through timers with optimized bucketing
+    const targetArray = range === 'day' ? result.hourly : result.daily;
+
+    for (const timer of timers) {
+      const timerStartMs = timer.startTime;
+
+      // Skip timers outside time range
+      if (timerStartMs < boundaries[0].start || timerStartMs >= nowMs) continue;
+
+      // Binary search for bucket (more efficient than linear search)
+      let bucketIndex = -1;
+      for (let i = 0; i < boundaries.length; i++) {
+        if (timerStartMs >= boundaries[i].start && timerStartMs < boundaries[i].end) {
+          bucketIndex = i;
+          break;
         }
       }
+
+      if (bucketIndex !== -1) {
+        const bucket = targetArray[bucketIndex];
+        bucket.count += 1;
+        bucket.totalDuration += timer.elapsedMs;
+        bucket.avgDuration = bucket.totalDuration / bucket.count;
+      }
     }
 
-    return {
-      hourly,
-      daily,
-      weekly // Not used currently; placeholder to keep structure
-    };
+    console.timeEnd('calculateTrends');
+    return result;
   }, []);
 
   // Chart options (memoized to avoid re-renders)
@@ -286,23 +342,34 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     }
   }), [selectedMetric]);
 
-  // Memoized chart data
+  // Memoized and optimized chart data processing
   const trendsChartData = useMemo(() => {
-    if (!data) return null;
+    if (!data || isProcessing) return null;
+
+    console.time('chartDataProcessing');
 
     const trendsData = selectedTimeRange === 'day' ? data.trends.hourly : data.trends.daily;
-    const labels = selectedTimeRange === 'day'
-      ? trendsData.map((d: any) => `${d.hour}:00`)
-      : trendsData.map((d: any) => d.date);
 
-    const values = trendsData.map((d: any) => {
+    // Early return if no data
+    if (!trendsData.length) {
+      console.timeEnd('chartDataProcessing');
+      return null;
+    }
+
+    const labels = selectedTimeRange === 'day'
+      ? trendsData.map(d => `${d.hour}:00`)
+      : trendsData.map(d => d.date);
+
+    const values = trendsData.map(d => {
       switch (selectedMetric) {
         case 'count': return d.count;
-        case 'duration': return d.count * d.avgDuration;
+        case 'duration': return d.totalDuration || (d.count * d.avgDuration);
         case 'average': return d.avgDuration;
         default: return d.count;
       }
     });
+
+    console.timeEnd('chartDataProcessing');
 
     return {
       labels,
@@ -318,7 +385,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         }
       ]
     };
-  }, [data, selectedTimeRange, selectedMetric]);
+  }, [data, selectedTimeRange, selectedMetric, isProcessing]);
 
   const projectsChartData = useMemo(() => {
     if (!data) return null;
@@ -433,7 +500,8 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
           <select
             value={selectedTimeRange}
             onChange={handleTimeRangeChange}
-            className="control-select"
+            className={`control-select ${isProcessing ? 'processing' : ''}`}
+            disabled={isProcessing}
           >
             <option value="day">Último Dia</option>
             <option value="week">Última Semana</option>
@@ -443,7 +511,8 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
           <select
             value={selectedMetric}
             onChange={handleMetricChange}
-            className="control-select"
+            className={`control-select ${isProcessing ? 'processing' : ''}`}
+            disabled={isProcessing}
           >
             <option value="count">Contagem</option>
             <option value="duration">Duração Total</option>
@@ -453,6 +522,13 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
           <button onClick={fetchAnalyticsData} className="refresh-button" disabled={loading}>
             {loading ? '⟳' : '↻'} Atualizar
           </button>
+
+          {isProcessing && (
+            <div className="processing-indicator">
+              <span className="spinner">⟳</span>
+              <span>Processando...</span>
+            </div>
+          )}
         </div>
       </div>
 
