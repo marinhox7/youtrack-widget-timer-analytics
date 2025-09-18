@@ -16,7 +16,8 @@
       "Bash(set YOUTRACK_HOST=braiphub.youtrack.cloud)",
       "Bash(echo \"YOUTRACK_HOST=$YOUTRACK_HOST\")",
       "Bash(echo \"Variables set: HOST=$YOUTRACK_HOST\")",
-      "WebSearch"
+      "WebSearch",
+      "Bash(set YOUTRACK_TOKEN=perm-cGF1bG8uY2FybW8=.NTQtODY=.QDTYr9xZ9AsXGGEh6kcrVJ7N8QkCa2)"
     ],
     "deny": [],
     "ask": []
