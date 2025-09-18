@@ -159,6 +159,7 @@ export interface TimerEntry {
   projectShortName: string;
   priority?: string;
   state?: string;
+  worktype?: string;
   assignees?: string[];
   tags?: YouTrackTag[];
   lastUpdated: number;

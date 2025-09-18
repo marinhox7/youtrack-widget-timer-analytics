@@ -328,7 +328,7 @@ export class YouTrackAPI {
     }
 
     const response = await this.makeRequest<YouTrackUser[]>(
-      `admin/users?${queryParams.toString()}`,
+      `users?${queryParams.toString()}`,
       { cache: false },
       requestId
     );
@@ -339,6 +339,211 @@ export class YouTrackAPI {
     }
 
     return response.data;
+  }
+
+  /**
+   * Fetch work items for historical timer data
+   */
+  async fetchWorkItems(options: {
+    start?: number; // timestamp
+    end?: number;   // timestamp
+    limit?: number;
+    offset?: number;
+    authorLogin?: string;
+  } = {}): Promise<any[]> {
+    const requestId = RequestIdGenerator.generate();
+
+    const queryParams = new URLSearchParams({
+      fields: 'id,created,duration(minutes,presentation),author(login,name),date,type(name),issue(id,summary,project(shortName))',
+      $top: (options.limit || 1000).toString(),
+      $skip: (options.offset || 0).toString()
+    });
+
+    if (options.start) {
+      queryParams.append('start', options.start.toString());
+    }
+
+    if (options.end) {
+      queryParams.append('end', options.end.toString());
+    }
+
+    if (options.authorLogin) {
+      queryParams.append('author', options.authorLogin);
+    }
+
+    const cacheKey = CacheKeyGenerator.apiKey('work_items', options);
+
+    // Try cache first
+    if (this.config.cache?.enabled) {
+      const cached = await globalCache.get<any[]>(cacheKey);
+      if (cached) {
+        this.logger.info('Using cached work items data', { count: cached.length, requestId });
+        return cached;
+      }
+    }
+
+    const response = await this.makeRequest<any[]>(
+      `workItems?${queryParams.toString()}`,
+      { cache: false },
+      requestId
+    );
+
+    // Cache the response
+    if (this.config.cache?.enabled) {
+      await globalCache.set(cacheKey, response.data, this.config.cache.defaultTtl);
+    }
+
+    return response.data;
+  }
+
+  /**
+   * Fetch available work item types
+   */
+  async fetchWorkItemTypes(): Promise<{id: string, name: string}[]> {
+    const requestId = RequestIdGenerator.generate();
+
+    const cacheKey = CacheKeyGenerator.apiKey('work_item_types', {});
+
+    // Try cache first
+    if (this.config.cache?.enabled) {
+      const cached = await globalCache.get<{id: string, name: string}[]>(cacheKey);
+      if (cached) {
+        this.logger.info('Using cached work item types data', { count: cached.length, requestId });
+        return cached;
+      }
+    }
+
+    const response = await this.makeRequest<{id: string, name: string}[]>(
+      'admin/timeTrackingSettings/workItemTypes?fields=id,name',
+      { cache: false },
+      requestId
+    );
+
+    // Cache the response
+    if (this.config.cache?.enabled) {
+      await globalCache.set(cacheKey, response.data, this.config.cache.defaultTtl * 10); // Cache for longer since this doesn't change often
+    }
+
+    return response.data;
+  }
+
+  /**
+   * Fetch recent timer comments (created when timers are started/stopped)
+   */
+  async fetchTimerLogs(): Promise<any[]> {
+    const requestId = RequestIdGenerator.generate();
+    const now = new Date();
+    const lastWeek = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)); // Last 7 days for historical trends
+
+    // Format dates for YouTrack API (YYYY-MM-DD format)
+    const formatDate = (date: Date) => date.toISOString().split('T')[0];
+    const nowFormatted = formatDate(now);
+    const lastWeekFormatted = formatDate(lastWeek);
+
+    try {
+      // First, get issues that might have timer comments
+      const issuesQueryParams = new URLSearchParams({
+        fields: 'id,idReadable,summary,project(shortName),comments(id,created,text,author(login,fullName))',
+        $top: '200',
+        query: `updated: ${lastWeekFormatted} .. today`, // Issues updated in last 7 days
+        _t: now.getTime().toString() // Add timestamp to bypass any caching
+      });
+
+      const response = await this.makeRequest<any[]>(
+        `issues?${issuesQueryParams.toString()}`,
+        { cache: false }, // Always fresh data for timer logs
+        requestId
+      );
+
+      // Extract timer-related comments
+      const timerLogs: any[] = [];
+      const lastWeekTimestamp = lastWeek.getTime();
+
+      for (const issue of response.data) {
+        if (!issue.comments) continue;
+
+        for (const comment of issue.comments) {
+          const commentTime = new Date(comment.created).getTime();
+
+          // Only consider comments from last 7 days
+          if (commentTime < lastWeekTimestamp) continue;
+
+          const commentText = comment.text || '';
+
+          // Check if comment contains any timer-related patterns
+          const isTimerComment = commentText.includes('TIMER INICIADO') ||
+                                commentText.includes('TIMER PARADO') ||
+                                commentText.includes('TIMER CANCELADO') ||
+                                commentText.includes('TIMER BLOQUEADO') ||
+                                commentText.includes('TIMER JÁ ATIVO');
+
+          if (isTimerComment) {
+            let timerAction = 'unknown';
+            let workType = 'N/A';
+            let duration = '';
+            let reason = '';
+
+            // Detect specific timer actions
+            if (commentText.includes('TIMER INICIADO')) {
+              timerAction = 'timer_started';
+            } else if (commentText.includes('TIMER PARADO')) {
+              timerAction = 'timer_stopped';
+
+              // Extract work type from comment (various emoji patterns)
+              const workTypeMatch = commentText.match(/(?:[💻🔧👥📋🔍🧪📝📚👀⚙️🛠️]\s*)?(?:\*\*)?Tipo de trabalho:\s*(.+?)(?:\*\*)?(?:\n|$)/);
+              if (workTypeMatch) {
+                workType = workTypeMatch[1].trim().replace(/\*\*/g, '');
+              }
+
+              // Extract duration from comment
+              const durationMatch = commentText.match(/⏱️\s*(?:\*\*)?Tempo trabalhado:\s*(.+?)(?:\*\*)?(?:\n|$)/);
+              if (durationMatch) {
+                duration = durationMatch[1].trim().replace(/\*\*/g, '');
+              }
+            } else if (commentText.includes('TIMER CANCELADO AUTOMATICAMENTE')) {
+              timerAction = 'timer_auto_canceled';
+              reason = '8+ horas consecutivas';
+            } else if (commentText.includes('TIMER CANCELADO')) {
+              timerAction = 'timer_canceled';
+              reason = 'Cancelado pelo usuário';
+            } else if (commentText.includes('TIMER BLOQUEADO')) {
+              timerAction = 'timer_blocked';
+              reason = 'Timer já ativo em outra issue';
+            } else if (commentText.includes('TIMER JÁ ATIVO')) {
+              timerAction = 'timer_duplicate';
+              reason = 'Timer já ativo nesta issue';
+            }
+
+            timerLogs.push({
+              id: `${issue.id}-${comment.id}`,
+              created: comment.created,
+              author: comment.author,
+              issueId: issue.id,
+              issueKey: issue.idReadable,
+              issueSummary: issue.summary,
+              projectShortName: issue.project?.shortName || 'UNK',
+              type: timerAction,
+              workType: workType,
+              duration: duration,
+              reason: reason
+            });
+          }
+        }
+      }
+
+      // Sort by creation date (newest first)
+      timerLogs.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+
+      // Only log if there are new logs or errors
+      if (timerLogs.length > 0) {
+        this.logger.info(`Timer logs: ${timerLogs.length} actions found`);
+      }
+
+      return timerLogs;
+    } catch (error) {
+      this.logger.error('Failed to fetch timer logs', error);
+      return [];
+    }
   }
 
   /**
@@ -751,6 +956,7 @@ export function processTimerData(issues: IssueWithTimer[]): TimerEntry[] {
         issueUrl,
         projectName: issue.project.name || issue.project.shortName,
         projectShortName: issue.project.shortName,
+        worktype: undefined, // Will be populated from work items data
         assignees: issue.assignees?.map(a => a.fullName || a.login) || [],
         tags: (issue.tags || []).map((tag) => typeof tag === 'string' ? { id: tag, name: tag } : tag) as YouTrackTag[],
         lastUpdated: issue.updated
