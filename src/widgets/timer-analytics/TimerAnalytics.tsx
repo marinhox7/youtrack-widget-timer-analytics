@@ -4,14 +4,29 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef, useTransition } from 'react';
+import { Chart as ChartJS, registerables } from 'chart.js';
+import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { debounce } from 'throttle-debounce';
-import { YouTrackAPI, processTimerData, formatDuration } from '../../services/api';
-import { TimerEntry } from '../../types';
+import { YouTrackAPI, processTimerData, calculateStats, formatDuration } from '../../services/api';
+import { TimerEntry, TimerStats, ProjectTimerStats, UserTimerStats } from '../../types';
 import { Logger } from '../../services/logger';
 import { useVirtualizedData } from '../../hooks/useVirtualizedData';
 import { useInfiniteScroll } from '../../hooks/useIntersectionObserver';
 import './TimerAnalytics.css';
 
+// Register Chart.js components
+ChartJS.register(...registerables);
+
+// Analytics Data Interface
+interface AnalyticsData {
+  timers: TimerEntry[];
+  stats: TimerStats;
+  trends: {
+    hourly: { hour: number; count: number; avgDuration: number }[];
+    daily: { date: string; count: number; avgDuration: number }[];
+    weekly: { week: string; count: number; avgDuration: number }[];
+  };
+}
 
 // Memoized Timer Card Component with clickable links
 const TimerCard = memo(({ timer }: { timer: TimerEntry }) => {
@@ -235,6 +250,7 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
 }) => {
   // Raw data state
   const [rawTimers, setRawTimers] = useState<TimerEntry[]>([]);
+  const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -331,6 +347,59 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
     }, 150); // Reduced from 300ms to 150ms
   }, [selectedFilters, filterItems, startTransition]);
 
+  // Calculate trends data for charts
+  const calculateTrends = useCallback((timers: TimerEntry[]) => {
+    const now = new Date();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    // Hourly trends for last 24 hours
+    const hourly = Array.from({ length: 24 }, (_, i) => {
+      const hour = (now.getHours() - i + 24) % 24;
+      const hourTimers = timers.filter(t => {
+        const timerHour = new Date(t.startTime).getHours();
+        return timerHour === hour;
+      });
+      return {
+        hour,
+        count: hourTimers.length,
+        avgDuration: hourTimers.length > 0 ? hourTimers.reduce((sum, t) => sum + t.elapsedMs, 0) / hourTimers.length : 0
+      };
+    }).reverse();
+
+    // Daily trends for last 7 days
+    const daily = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(now.getTime() - i * oneDay);
+      const dateStr = date.toISOString().split('T')[0];
+      const dayTimers = timers.filter(t => {
+        const timerDate = new Date(t.startTime).toISOString().split('T')[0];
+        return timerDate === dateStr;
+      });
+      return {
+        date: dateStr,
+        count: dayTimers.length,
+        avgDuration: dayTimers.length > 0 ? dayTimers.reduce((sum, t) => sum + t.elapsedMs, 0) / dayTimers.length : 0
+      };
+    }).reverse();
+
+    // Weekly trends for last 4 weeks
+    const weekly = Array.from({ length: 4 }, (_, i) => {
+      const weekStart = new Date(now.getTime() - i * 7 * oneDay);
+      const weekEnd = new Date(weekStart.getTime() + 7 * oneDay);
+      const weekStr = `Week ${weekStart.getMonth() + 1}/${weekStart.getDate()}`;
+      const weekTimers = timers.filter(t => {
+        const timerDate = new Date(t.startTime);
+        return timerDate >= weekStart && timerDate < weekEnd;
+      });
+      return {
+        week: weekStr,
+        count: weekTimers.length,
+        avgDuration: weekTimers.length > 0 ? weekTimers.reduce((sum, t) => sum + t.elapsedMs, 0) / weekTimers.length : 0
+      };
+    }).reverse();
+
+    return { hourly, daily, weekly };
+  }, []);
+
   // Optimized handlers with instant UI feedback
   const handleTimeRangeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     handleFilterChange('timeRange', e.target.value);
@@ -361,12 +430,24 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
 
       const timers = processTimerData(issues);
 
-      // Set raw data - filtering will be handled by virtualized hook
-      setRawTimers(timers);
+      // Calculate analytics data
+      const stats = calculateStats(timers);
+      const trends = calculateTrends(timers);
 
-      logger.warn('Raw timer data loaded', {
+      const analyticsData: AnalyticsData = {
+        timers,
+        stats,
+        trends
+      };
+
+      // Set both raw data and calculated analytics
+      setRawTimers(timers);
+      setData(analyticsData);
+
+      logger.warn('Analytics data loaded', {
         timerCount: timers.length,
-        projects: [...new Set(timers.map(t => t.projectShortName))].length
+        projects: [...new Set(timers.map(t => t.projectShortName))].length,
+        users: stats.totalUsers
       });
 
     } catch (err) {
@@ -411,6 +492,113 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
       averageTime
     };
   }, [visibleItems]);
+
+  // Trends Chart Data
+  const trendsChartData = useMemo(() => {
+    if (!data?.trends) return null;
+
+    const trendsData = selectedFilters.timeRange === 'day' ? data.trends.hourly :
+                       selectedFilters.timeRange === 'week' ? data.trends.daily :
+                       data.trends.weekly;
+
+    const labels = selectedFilters.timeRange === 'day'
+      ? trendsData.map((d: any) => `${d.hour}:00`)
+      : trendsData.map((d: any) => d.date || d.week);
+
+    const values = trendsData.map((d: any) => {
+      switch (selectedFilters.metric) {
+        case 'count': return d.count;
+        case 'duration': return d.count * d.avgDuration / (1000 * 60); // Convert to minutes
+        case 'average': return d.avgDuration / (1000 * 60); // Convert to minutes
+        default: return d.count;
+      }
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: selectedFilters.metric === 'count' ? 'Timer Count' :
+                 selectedFilters.metric === 'duration' ? 'Total Duration (min)' : 'Average Duration (min)',
+          data: values,
+          backgroundColor: 'rgba(54, 162, 235, 0.5)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }
+      ]
+    };
+  }, [data, selectedFilters.timeRange, selectedFilters.metric]);
+
+  // Projects Chart Data
+  const projectsChartData = useMemo(() => {
+    if (!data?.stats?.projectBreakdown) return null;
+
+    const projects = data.stats.projectBreakdown.slice(0, 10);
+
+    return {
+      labels: projects.map(p => p.projectShortName),
+      datasets: [
+        {
+          label: 'Timers Ativos',
+          data: projects.map(p => p.timerCount),
+          backgroundColor: [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+          ],
+          borderWidth: 1
+        }
+      ]
+    };
+  }, [data]);
+
+  // Status Distribution Data
+  const statusDistributionData = useMemo(() => {
+    if (!data?.timers) return {
+      labels: ['OK', 'Attention', 'Long', 'Critical', 'Overtime'],
+      datasets: [{
+        data: [0, 0, 0, 0, 0],
+        backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#dc3545', '#6f42c1']
+      }]
+    };
+
+    const statusCounts = {
+      ok: data.timers.filter(t => t.status === 'ok').length,
+      attention: data.timers.filter(t => t.status === 'attention').length,
+      long: data.timers.filter(t => t.status === 'long').length,
+      critical: data.timers.filter(t => t.status === 'critical').length,
+      overtime: data.timers.filter(t => t.status === 'overtime').length
+    };
+
+    return {
+      labels: ['OK', 'Atenção', 'Longo', 'Crítico', 'Extra'],
+      datasets: [
+        {
+          data: Object.values(statusCounts),
+          backgroundColor: ['#28a745', '#ffc107', '#fd7e14', '#dc3545', '#6f42c1'],
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }
+      ]
+    };
+  }, [data]);
+
+  // Chart options
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -592,97 +780,105 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
         />
       </div>
 
-      {/* Quick Analytics Grid - Charts removed for performance */}
-      <div className="quick-analytics-grid">
-        {/* Status Distribution */}
-        <div className="analytics-container">
-          <h3>📊 Distribuição por Status</h3>
-          <div className="status-breakdown">
-            {Object.entries(
-              visibleItems.reduce((acc, timer) => {
-                acc[timer.status] = (acc[timer.status] || 0) + 1;
-                return acc;
-              }, {} as Record<string, number>)
-            ).map(([status, count]) => (
-              <div key={status} className={`status-item status-${status}`}>
-                <span className="status-label">{status.toUpperCase()}</span>
-                <span className="status-count">{count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Live Statistics - Computed from visible items */}
-      <div className="live-stats-grid">
-        {/* Top Projects */}
-        {showProjectBreakdown && (
-          <div className="breakdown-container">
-            <h3>🏗️ Top Projetos (Filtrados)</h3>
-            <div className="breakdown-list">
-              {Object.entries(
-                visibleItems.reduce((acc, timer) => {
-                  const project = timer.projectShortName;
-                  if (!acc[project]) {
-                    acc[project] = { count: 0, totalTime: 0, users: new Set() };
-                  }
-                  acc[project].count++;
-                  acc[project].totalTime += timer.elapsedMs;
-                  acc[project].users.add(timer.username);
-                  return acc;
-                }, {} as Record<string, { count: number; totalTime: number; users: Set<string> }>)
-              )
-                .sort(([,a], [,b]) => b.count - a.count)
-                .slice(0, 5)
-                .map(([project, stats]) => (
-                  <div key={project} className="breakdown-item">
-                    <div className="breakdown-info">
-                      <span className="breakdown-name">{project}</span>
-                      <span className="breakdown-detail">{stats.users.size} usuários</span>
-                    </div>
-                    <div className="breakdown-metrics">
-                      <span className="breakdown-count">{stats.count}</span>
-                      <span className="breakdown-duration">{formatDuration(stats.totalTime)}</span>
-                    </div>
-                  </div>
-                ))
-              }
+      {/* Charts Grid */}
+      <div className="charts-grid">
+        {/* Trends Chart */}
+        {showTrends && trendsChartData && (
+          <div className="chart-container">
+            <h3>📈 Tendências de Timers</h3>
+            <div className="chart-wrapper">
+              <Line
+                data={trendsChartData}
+                options={chartOptions}
+              />
             </div>
           </div>
         )}
 
-        {/* Top Users */}
-        {showUserBreakdown && (
-          <div className="breakdown-container">
-            <h3>👤 Top Usuários (Filtrados)</h3>
-            <div className="breakdown-list">
-              {Object.entries(
-                visibleItems.reduce((acc, timer) => {
-                  const user = timer.username;
-                  if (!acc[user]) {
-                    acc[user] = { count: 0, totalTime: 0, projects: new Set() };
+        {/* Project Breakdown Chart */}
+        {showProjectBreakdown && projectsChartData && (
+          <div className="chart-container">
+            <h3>📊 Breakdown por Projeto</h3>
+            <div className="chart-wrapper">
+              <Bar
+                data={projectsChartData}
+                options={{
+                  ...chartOptions,
+                  plugins: {
+                    legend: {
+                      display: false
+                    }
                   }
-                  acc[user].count++;
-                  acc[user].totalTime += timer.elapsedMs;
-                  acc[user].projects.add(timer.projectShortName);
-                  return acc;
-                }, {} as Record<string, { count: number; totalTime: number; projects: Set<string> }>)
-              )
-                .sort(([,a], [,b]) => b.count - a.count)
-                .slice(0, 5)
-                .map(([user, stats]) => (
-                  <div key={user} className="breakdown-item">
-                    <div className="breakdown-info">
-                      <span className="breakdown-name">{user}</span>
-                      <span className="breakdown-detail">{stats.projects.size} projetos</span>
-                    </div>
-                    <div className="breakdown-metrics">
-                      <span className="breakdown-count">{stats.count}</span>
-                      <span className="breakdown-duration">{formatDuration(stats.totalTime)}</span>
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Status Distribution Chart */}
+        <div className="chart-container">
+          <h3>🎯 Distribuição por Status</h3>
+          <div className="chart-wrapper">
+            <Doughnut
+              data={statusDistributionData!}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'right' as const,
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Breakdowns Grid */}
+      <div className="breakdowns-grid">
+        {/* Project Breakdown */}
+        {showProjectBreakdown && data?.stats?.projectBreakdown && (
+          <div className="breakdown-container">
+            <h3>📁 Top Projetos</h3>
+            <div className="breakdown-list">
+              {data.stats.projectBreakdown.slice(0, 8).map((project, index) => (
+                <div key={project.projectShortName} className="breakdown-item">
+                  <div className="breakdown-info">
+                    <div className="breakdown-name">{project.projectShortName}</div>
+                    <div className="breakdown-detail">{project.timerCount} timers ativos</div>
+                  </div>
+                  <div className="breakdown-metrics">
+                    <div className="breakdown-count">{project.timerCount}</div>
+                    <div className="breakdown-duration">
+                      {formatDuration(project.totalTimeMs)}
                     </div>
                   </div>
-                ))
-              }
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* User Breakdown */}
+        {showUserBreakdown && data?.stats?.userBreakdown && (
+          <div className="breakdown-container">
+            <h3>👥 Top Usuários</h3>
+            <div className="breakdown-list">
+              {data.stats.userBreakdown.slice(0, 8).map((user, index) => (
+                <div key={user.username} className="breakdown-item">
+                  <div className="breakdown-info">
+                    <div className="breakdown-name">{user.username}</div>
+                    <div className="breakdown-detail">{user.timerCount} timers ativos</div>
+                  </div>
+                  <div className="breakdown-metrics">
+                    <div className="breakdown-count">{user.timerCount}</div>
+                    <div className="breakdown-duration">
+                      {formatDuration(user.totalTimeMs)}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -690,7 +886,12 @@ const TimerAnalytics: React.FC<TimerAnalyticsProps> = memo(({
 
       {/* Footer */}
       <div className="analytics-footer">
-        <span>Última atualização: {new Date().toLocaleTimeString()}</span>
+        <div>
+          Última atualização: {new Date().toLocaleTimeString()}
+        </div>
+        <div>
+          {data ? `${data.timers.length} timers ativos • ${data.stats.totalUsers} usuários` : 'Carregando...'}
+        </div>
       </div>
 
     </div>
