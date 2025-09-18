@@ -380,12 +380,12 @@
   border: 2px solid #404040 !important;
   border-radius: 8px !important;
   padding: 16px !important;
-  transition: all 0.2s ease !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
   display: flex !important;
-  justify-content: space-between !important;
-  align-items: stretch !important;
-  gap: 12px !important;
+  flex-direction: column !important;
+  min-height: 160px !important;
+  position: relative !important;
 }
 
 .widget-container .active-issue-card:hover {

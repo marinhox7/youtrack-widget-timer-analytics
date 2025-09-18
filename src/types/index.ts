@@ -167,7 +167,8 @@ export interface TimerEntry {
 /**
  * Timer status enumeration based on elapsed time
  */
-export type TimerStatus = 'ok' | 'attention' | 'long' | 'critical' | 'overtime';
+// CORRIGIR: Remover "overtime" do tipo de status
+export type TimerStatus = 'ok' | 'attention' | 'long' | 'critical';
 
 /**
  * Timer statistics for dashboard summary

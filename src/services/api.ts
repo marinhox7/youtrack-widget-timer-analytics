@@ -972,11 +972,12 @@ export function processTimerData(issues: IssueWithTimer[]): TimerEntry[] {
       const elapsedMs = now - startTime;
       const hours = elapsedMs / (1000 * 60 * 60);
 
+      // CORRIGIR: Remover "overtime", timers 8h+ são "critical"
       let status: TimerEntry['status'] = 'ok';
-      if (hours > 12) status = 'overtime';
-      else if (hours > 8) status = 'critical';
-      else if (hours > 4) status = 'long';
-      else if (hours > 2) status = 'attention';
+      if (hours >= 8) status = 'critical';      // 8h+ = crítico (era overtime)
+      else if (hours >= 4) status = 'long';     // 4-8h = longo
+      else if (hours >= 2) status = 'attention'; // 2-4h = atenção
+      // < 2h = ok (padrão)
 
       entries.push({
         id: `${issue.id}_${username}`,
@@ -1020,9 +1021,9 @@ export function calculateStats(entries: TimerEntry[]): TimerStats {
   entries.forEach(entry => {
     totalTimeMs += entry.elapsedMs;
 
+    // CORRIGIR: Remover "overtime", contar apenas "critical"
     switch (entry.status) {
       case 'critical':
-      case 'overtime':
         criticalTimers++;
         break;
       case 'long':
@@ -1031,6 +1032,7 @@ export function calculateStats(entries: TimerEntry[]): TimerStats {
       case 'attention':
         attentionTimers++;
         break;
+      // 'ok' não precisa contador
     }
 
     // Project breakdown
@@ -1050,7 +1052,8 @@ export function calculateStats(entries: TimerEntry[]): TimerStats {
     const project = projectBreakdown.get(entry.projectShortName);
     project.timerCount++;
     project.totalTimeMs += entry.elapsedMs;
-    if (['critical', 'overtime'].includes(entry.status)) project.criticalCount++;
+    // CORRIGIR: Apenas "critical", sem "overtime"
+    if (entry.status === 'critical') project.criticalCount++;
     project.users.add(entry.username);
 
     // User breakdown
@@ -1070,7 +1073,8 @@ export function calculateStats(entries: TimerEntry[]): TimerStats {
     user.timerCount++;
     user.totalTimeMs += entry.elapsedMs;
     user.longestTimerMs = Math.max(user.longestTimerMs, entry.elapsedMs);
-    if (['critical', 'overtime'].includes(entry.status)) user.criticalCount++;
+    // CORRIGIR: Apenas "critical", sem "overtime"
+    if (entry.status === 'critical') user.criticalCount++;
     user.projects.add(entry.projectShortName);
   });
 
